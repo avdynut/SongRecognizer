@@ -7,6 +7,19 @@
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800">
     <Grid>
-
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <Button Grid.Row="0" Content="Connect" Click="OnConnectButtonClick"/>
+        <TextBox Grid.Row="1" Name="PhoneNumber" Text="+375336517711"/>
+        <Button Grid.Row="2" Content="Get Code" Click="OnGetCodeButtonClick"/>
+        <TextBox Grid.Row="3" Name="ReceivedCode"/>
+        <Button Grid.Row="4" Content="Auth" Click="OnAuthButtonClick"/>
+        <Button Grid.Row="5" Content="Send Message" Click="OnSendMessageButtonClick"/>
     </Grid>
 </Window>
