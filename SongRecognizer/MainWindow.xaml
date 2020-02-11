@@ -3,9 +3,10 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:SongRecognizer"
-        mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        Title="MainWindow"
+        Width="800"
+        Height="450"
+        mc:Ignorable="d">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -14,12 +15,27 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <Button Grid.Row="0" Content="Connect" Click="OnConnectButtonClick"/>
-        <TextBox Grid.Row="1" Name="PhoneNumber" Text="+375336517711"/>
-        <Button Grid.Row="2" Content="Get Code" Click="OnGetCodeButtonClick"/>
-        <TextBox Grid.Row="3" Name="ReceivedCode"/>
-        <Button Grid.Row="4" Content="Auth" Click="OnAuthButtonClick"/>
-        <Button Grid.Row="5" Content="Send Message" Click="OnSendMessageButtonClick"/>
+        <Button Grid.Row="0"
+                Click="OnConnectButtonClick"
+                Content="Connect"/>
+        <TextBox Name="PhoneNumber"
+                 Grid.Row="1"
+                 Text=""/>
+        <Button Grid.Row="2"
+                Click="OnGetCodeButtonClick"
+                Content="Get Code"/>
+        <TextBox Name="ReceivedCode" Grid.Row="3"/>
+        <Button Grid.Row="4"
+                Click="OnAuthButtonClick"
+                Content="Auth"/>
+        <Button Grid.Row="5"
+                Click="OnSendMessageButtonClick"
+                Content="Send Message"/>
+        <StackPanel Grid.Row="6">
+            <Button Content="Update History" Click="OnUpdateHistoryButtonClick"/>
+            <ListBox Name="History"/>
+        </StackPanel>
     </Grid>
 </Window>
