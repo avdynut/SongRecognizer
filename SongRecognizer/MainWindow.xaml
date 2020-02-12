@@ -30,12 +30,21 @@
         <Button Grid.Row="4"
                 Click="OnAuthButtonClick"
                 Content="Auth"/>
-        <Button Grid.Row="5"
-                Click="OnSendMessageButtonClick"
-                Content="Send Message"/>
+        <StackPanel Grid.Row="5"
+                    HorizontalAlignment="Center"
+                    Orientation="Horizontal">
+            <Button Click="OnStartRecordButtonClick" Content="Start Record"/>
+            <Button Click="OnStopRecordButtonClick" Content="Stop Record"/>
+            <Button Click="OnSendMessageButtonClick" Content="Send Message"/>
+        </StackPanel>
         <StackPanel Grid.Row="6">
-            <Button Content="Update History" Click="OnUpdateHistoryButtonClick"/>
-            <ListBox Name="History"/>
+            <Button Click="OnUpdateHistoryButtonClick" Content="Update History"/>
+            <TextBox Name="Result" IsReadOnly="True"/>
+            <TextBlock>
+                <Hyperlink Name="Link" RequestNavigate="OnLinkRequestNavigate">
+                    <TextBlock Name="LinkText"/>
+                </Hyperlink>
+            </TextBlock>
         </StackPanel>
     </Grid>
 </Window>

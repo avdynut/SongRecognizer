@@ -1,7 +1,10 @@
-﻿using System.IO;
+﻿using NAudio.Wave;
+using System;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Navigation;
 using TeleSharp.TL;
 using TeleSharp.TL.Messages;
 using TLSharp.Core;
@@ -22,6 +25,8 @@ namespace SongRecognizer
         private readonly TelegramClient _client = new TelegramClient(ApiId, ApiHash);
         private string _codeHash;
         private TLInputPeerUser _bot;
+
+        private WasapiLoopbackCapture _captureInstance;
 
         public MainWindow()
         {
@@ -65,12 +70,43 @@ namespace SongRecognizer
             var history = (TLMessages)await _client.GetHistoryAsync(_bot);
             var messages = history.Messages.OfType<TLMessage>()
                 .Where(x => x.FromId == _bot.UserId && x.Message.Contains("music.yandex.ru"));
-            History.ItemsSource = messages.Select(x => x.Message);
 
-            string responseMessage = messages.First().Message;
-            var result = responseMessage.Substring(0, responseMessage.IndexOf('\n')).Split('-');
+            var result = messages.First().Message.Split('\n');
+            string link = result[1];
+
+            Result.Text = result[0];
+            Link.NavigateUri = new Uri(link);
+            LinkText.Text = link;
+
+            result = result[0].Split('-');
             string artist = result[0].Trim();
             string title = result[1].Trim();
+        }
+
+        private void OnStartRecordButtonClick(object sender, RoutedEventArgs e)
+        {
+            _captureInstance = new WasapiLoopbackCapture();
+            var audioWriter = new WaveFileWriter(FileName, _captureInstance.WaveFormat);
+
+            _captureInstance.DataAvailable += (s, a) => audioWriter.Write(a.Buffer, 0, a.BytesRecorded);
+
+            _captureInstance.RecordingStopped += (s, a) =>
+            {
+                audioWriter.Dispose();
+                _captureInstance.Dispose();
+            };
+
+            _captureInstance.StartRecording();
+        }
+
+        private void OnStopRecordButtonClick(object sender, RoutedEventArgs e)
+        {
+            _captureInstance?.StopRecording();
+        }
+
+        private void OnLinkRequestNavigate(object sender, RequestNavigateEventArgs e)
+        {
+            //Process.Start(e.Uri.ToString());
         }
     }
 }
