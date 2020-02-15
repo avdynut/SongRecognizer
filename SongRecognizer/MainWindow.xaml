@@ -11,33 +11,16 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <Button Grid.Row="0"
-                Click="OnConnectButtonClick"
-                Content="Connect"/>
-        <TextBox Name="PhoneNumber"
-                 Grid.Row="1"
-                 Text=""/>
-        <Button Grid.Row="2"
-                Click="OnGetCodeButtonClick"
-                Content="Get Code"/>
-        <TextBox Name="ReceivedCode" Grid.Row="3"/>
-        <Button Grid.Row="4"
-                Click="OnAuthButtonClick"
-                Content="Auth"/>
-        <StackPanel Grid.Row="5"
+
+        <StackPanel Grid.Row="0"
                     HorizontalAlignment="Center"
                     Orientation="Horizontal">
             <Button Click="OnStartRecordButtonClick" Content="Start Record"/>
             <Button Click="OnStopRecordButtonClick" Content="Stop Record"/>
             <Button Click="OnSendMessageButtonClick" Content="Send Message"/>
         </StackPanel>
-        <StackPanel Grid.Row="6">
+        <StackPanel Grid.Row="1">
             <Button Click="OnUpdateHistoryButtonClick" Content="Update History"/>
             <TextBox Name="Result" IsReadOnly="True"/>
             <TextBlock>
