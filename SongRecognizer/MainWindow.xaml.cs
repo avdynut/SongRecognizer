@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Navigation;
+using System.Windows.Threading;
 using TeleSharp.TL;
 using TeleSharp.TL.Messages;
 using TLSharp.Core;
@@ -19,54 +20,64 @@ namespace SongRecognizer
     {
         private const string YaMelodyBotUsername = "YaMelodyBot";
         private const string FileName = "record.wav";
+        private const int RecordDurationSeconds = 7;
 
         private TelegramClient _telegramClient;
-        private WasapiLoopbackCapture _captureInstance;
-
-        public TLInputPeerUser YaMelodyBot;
+        private TLInputPeerUser _yaMelodyBot;
 
         public async Task InitializeAsync(TelegramClient telegramClient)
         {
             _telegramClient = telegramClient ?? throw new ArgumentNullException(nameof(telegramClient));
-            YaMelodyBot = await _telegramClient.GetPeerUser(YaMelodyBotUsername);
+            _yaMelodyBot = await _telegramClient.GetPeerUser(YaMelodyBotUsername);
 
             InitializeComponent();
+            RecordProgress.Maximum = RecordDurationSeconds;
         }
 
-        private void OnStartRecordButtonClick(object sender, RoutedEventArgs e)
+        private void OnIdentifySongButtonClick(object sender, RoutedEventArgs e)
         {
-            _captureInstance = new WasapiLoopbackCapture();
-            var audioWriter = new WaveFileWriter(FileName, _captureInstance.WaveFormat);
+            var captureInstance = new WasapiLoopbackCapture();
+            var audioWriter = new WaveFileWriter(FileName, captureInstance.WaveFormat);
 
-            _captureInstance.DataAvailable += (s, a) => audioWriter.Write(a.Buffer, 0, a.BytesRecorded);
+            captureInstance.DataAvailable += (s, e) => audioWriter.Write(e.Buffer, 0, e.BytesRecorded);
 
-            _captureInstance.RecordingStopped += (s, a) =>
+            captureInstance.RecordingStopped += async (s, e) =>
             {
                 audioWriter.Dispose();
-                _captureInstance.Dispose();
+                captureInstance.Dispose();
+                await SendRecord();
             };
 
-            _captureInstance.StartRecording();
+            var timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+            timer.Tick += (s, e) =>
+            {
+                RecordProgress.Value++;
+                if (RecordProgress.Value == RecordProgress.Maximum)
+                {
+                    timer.Stop();
+                    captureInstance.StopRecording();
+                }
+            };
+
+            RecordProgress.Value = 0;
+            timer.Start();
+            captureInstance.StartRecording();
         }
 
-        private void OnStopRecordButtonClick(object sender, RoutedEventArgs e)
-        {
-            _captureInstance?.StopRecording();
-        }
-
-        private async void OnSendMessageButtonClick(object sender, RoutedEventArgs e)
+        private async Task SendRecord()
         {
             var fileResult = await _telegramClient.UploadFile(FileName, new StreamReader(FileName));
 
             var attributes = new TLVector<TLAbsDocumentAttribute>();
-            var sendResult = await _telegramClient.SendUploadedDocument(YaMelodyBot, fileResult, "", "audio/vnd.wave", attributes);
+            var sendResult = await _telegramClient.SendUploadedDocument(
+                _yaMelodyBot, fileResult, FileName, "audio/vnd.wave", attributes);
         }
 
         private async void OnUpdateHistoryButtonClick(object sender, RoutedEventArgs e)
         {
-            var history = (TLMessages)await _telegramClient.GetHistoryAsync(YaMelodyBot);
+            var history = (TLMessages)await _telegramClient.GetHistoryAsync(_yaMelodyBot);
             var messages = history.Messages.OfType<TLMessage>()
-                .Where(x => x.FromId == YaMelodyBot.UserId && x.Message.Contains("music.yandex.ru"));
+                .Where(x => x.FromId == _yaMelodyBot.UserId && x.Message.Contains("music.yandex.ru"));
 
             var result = messages.First().Message.Split('\n');
             string link = result[1];
