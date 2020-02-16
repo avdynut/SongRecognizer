@@ -12,6 +12,7 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <Button Grid.Row="0"
@@ -21,7 +22,6 @@
                      Grid.Row="1"
                      Height="20"/>
         <StackPanel Grid.Row="2">
-            <Button Click="OnUpdateHistoryButtonClick" Content="Update History"/>
             <TextBox Name="Result" IsReadOnly="True"/>
             <TextBlock>
                 <Hyperlink Name="Link" RequestNavigate="OnLinkRequestNavigate">
@@ -29,5 +29,6 @@
                 </Hyperlink>
             </TextBlock>
         </StackPanel>
+        <TextBlock Name="Status" Grid.Row="3"/>
     </Grid>
 </Window>
