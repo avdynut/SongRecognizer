@@ -1,4 +1,6 @@
-﻿using System.Windows;
+﻿using SongRecognizer.ViewModels;
+using SongRecognizer.Windows;
+using System.Windows;
 using System.Windows.Threading;
 using TLSharp.Core;
 
@@ -23,7 +25,7 @@ namespace SongRecognizer
 
             if (!_telegramClient.IsUserAuthorized())
             {
-                var loginWindow = new LoginWindow(_telegramClient);
+                var loginWindow = new LoginWindow { DataContext = new LoginViewModel(_telegramClient) };
 
                 if (loginWindow.ShowDialog() == false)
                 {

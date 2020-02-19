@@ -1,5 +1,6 @@
 ﻿using NAudio.Wave;
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
 using System.Windows;
@@ -8,7 +9,7 @@ using TeleSharp.TL;
 using TLSharp.Core;
 using TLSharp.Core.Utils;
 
-namespace SongRecognizer
+namespace SongRecognizer.Windows
 {
     /// <summary>
     /// Interaction logic for MainWindow.xaml
@@ -136,7 +137,8 @@ namespace SongRecognizer
 
         private void OnLinkRequestNavigate(object sender, RequestNavigateEventArgs e)
         {
-            //Process.Start(e.Uri.ToString());
+            var processInfo = new ProcessStartInfo { FileName = e.Uri.ToString(), UseShellExecute = true };
+            Process.Start(processInfo);
         }
     }
 }
