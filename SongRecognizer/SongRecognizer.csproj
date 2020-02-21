@@ -14,8 +14,4 @@
     <PackageReference Include="TLSharp" Version="0.1.0.470" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Models\" />
-  </ItemGroup>
-
 </Project>

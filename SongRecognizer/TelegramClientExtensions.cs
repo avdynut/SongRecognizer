@@ -21,7 +21,7 @@ namespace SongRecognizer
 
         public static async Task<TLMessage> GetLastMessage(this TelegramClient client, TLInputPeerUser peer)
         {
-            var history = (TLMessages)await client.GetHistoryAsync(peer);
+            var history = (TLMessagesSlice)await client.GetHistoryAsync(peer);
             var message = history.Messages.OfType<TLMessage>().First(x => x.FromId == peer.UserId);
             return message;
         }

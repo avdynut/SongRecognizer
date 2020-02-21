@@ -18,8 +18,8 @@ namespace SongRecognizer
 
         private async void OnStartup(object sender, StartupEventArgs e)
         {
-            var mainWindow = new MainWindow();
-            MainWindow = mainWindow;
+            var mainViewModel = new MainViewModel(_telegramClient);
+            MainWindow = new MainWindow { DataContext = mainViewModel };
 
             await _telegramClient.ConnectAsync();
 
@@ -34,7 +34,7 @@ namespace SongRecognizer
                 }
             }
 
-            await mainWindow.InitializeAsync(_telegramClient);
+            await mainViewModel.InitializeAsync();
             MainWindow.Show();
         }
 
