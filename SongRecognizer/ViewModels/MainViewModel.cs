@@ -5,6 +5,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Input;
 using TeleSharp.TL;
 using TLSharp.Core;
@@ -16,7 +17,7 @@ namespace SongRecognizer.ViewModels
     {
         private const string YaMelodyBotUsername = "YaMelodyBot";
         private const string FileName = "record.wav";
-        private const int RecordDurationSeconds = 5;
+        private const double RecordDurationSeconds = 3;
         private const int ResponseTimeoutSeconds = 10;
         private const int MinFileSizeBytes = 1024 * 100;
 
@@ -31,17 +32,7 @@ namespace SongRecognizer.ViewModels
             {
                 _state = value;
                 OnPropertyChanged();
-            }
-        }
-
-        private bool _isRecordingInProcess;
-        public bool IsRecordingInProcess
-        {
-            get => _isRecordingInProcess;
-            set
-            {
-                _isRecordingInProcess = value;
-                OnPropertyChanged();
+                CommandManager.InvalidateRequerySuggested();
             }
         }
 
@@ -55,6 +46,8 @@ namespace SongRecognizer.ViewModels
                 OnPropertyChanged();
             }
         }
+
+        public Duration RecordDuration { get; } = TimeSpan.FromSeconds(RecordDurationSeconds);
 
         public ICommand IdentifySongCommand { get; }
         public ICommand NavigateLinkCommand { get; }
@@ -82,11 +75,9 @@ namespace SongRecognizer.ViewModels
 
             captureInstance.DataAvailable += (s, e) => audioWriter.Write(e.Buffer, 0, e.BytesRecorded);
 
-            IsRecordingInProcess = true;
             captureInstance.StartRecording();
-            await Task.Delay(TimeSpan.FromSeconds(RecordDurationSeconds));
+            await Task.Delay(RecordDuration.TimeSpan);
             captureInstance.StopRecording();
-            IsRecordingInProcess = false;
 
             audioWriter.Dispose();
             captureInstance.Dispose();

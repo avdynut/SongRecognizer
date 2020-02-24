@@ -14,10 +14,12 @@ namespace SongRecognizer
         private const int ApiId = 1087573;
         private const string ApiHash = "478d65ed651632ca1cb656e2b9013501";
 
-        private readonly TelegramClient _telegramClient = new TelegramClient(ApiId, ApiHash);
+        private TelegramClient _telegramClient;
 
         private async void OnStartup(object sender, StartupEventArgs e)
         {
+            _telegramClient = new TelegramClient(ApiId, ApiHash);
+
             var mainViewModel = new MainViewModel(_telegramClient);
             MainWindow = new MainWindow { DataContext = mainViewModel };
 
@@ -36,6 +38,12 @@ namespace SongRecognizer
 
             await mainViewModel.InitializeAsync();
             MainWindow.Show();
+        }
+
+        protected override void OnExit(ExitEventArgs e)
+        {
+            _telegramClient?.Dispose();
+            base.OnExit(e);
         }
 
         private void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
