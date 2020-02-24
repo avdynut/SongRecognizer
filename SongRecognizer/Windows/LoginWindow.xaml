@@ -3,6 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:local="clr-namespace:SongRecognizer"
+        xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="clr-namespace:SongRecognizer.ViewModels"
         Title="Login"
@@ -10,8 +11,15 @@
         MinHeight="150"
         d:DataContext="{d:DesignInstance vm:LoginViewModel}"
         local:DialogCloser.DialogResult="{Binding DialogResult}"
+        Background="{DynamicResource MaterialDesignPaper}"
+        FontFamily="{DynamicResource MaterialDesignFont}"
         ResizeMode="NoResize"
         SizeToContent="WidthAndHeight"
+        TextElement.FontSize="13"
+        TextElement.FontWeight="Regular"
+        TextElement.Foreground="{DynamicResource MaterialDesignBody}"
+        TextOptions.TextFormattingMode="Ideal"
+        TextOptions.TextRenderingMode="Auto"
         WindowStyle="ToolWindow"
         mc:Ignorable="d">
     <Grid>

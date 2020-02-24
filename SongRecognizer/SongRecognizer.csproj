@@ -10,6 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="MaterialDesignThemes" Version="3.0.1" />
     <PackageReference Include="NAudio" Version="1.10.0" />
     <PackageReference Include="TLSharp" Version="0.1.0.470" />
   </ItemGroup>
