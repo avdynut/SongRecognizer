@@ -26,6 +26,28 @@ namespace SongRecognizer.ViewModels
             }
         }
 
+        private int _selectedSlideIndex;
+        public int SelectedSlideIndex
+        {
+            get => _selectedSlideIndex;
+            set
+            {
+                _selectedSlideIndex = value;
+                OnPropertyChanged();
+            }
+        }
+
+        private bool _requestInProcess;
+        public bool RequestInProcess
+        {
+            get => _requestInProcess;
+            set
+            {
+                _requestInProcess = value;
+                OnPropertyChanged();
+            }
+        }
+
         public ICommand QueryPhoneCodeCommand { get; }
         public ICommand AuthCommand { get; }
 
@@ -39,7 +61,22 @@ namespace SongRecognizer.ViewModels
 
         private async Task QueryPhoneCodeAsync()
         {
-            _codeHash = await _telegramClient.SendCodeRequestAsync(PhoneNumber);
+            RequestInProcess = true;
+            try
+            {
+                _codeHash = await _telegramClient.SendCodeRequestAsync(PhoneNumber);
+            }
+            catch (Exception exception)
+            {
+
+                throw;
+            }
+            finally
+            {
+                RequestInProcess = false;
+            }
+
+            SelectedSlideIndex = 1;
         }
 
         private bool CanQueryPhoneCode()
@@ -49,8 +86,18 @@ namespace SongRecognizer.ViewModels
 
         private async Task AuthAsync()
         {
-            var user = await _telegramClient.MakeAuthAsync(PhoneNumber, _codeHash, ReceivedCode);
-            DialogResult = true;
+            RequestInProcess = true;
+            try
+            {
+                var user = await _telegramClient.MakeAuthAsync(PhoneNumber, _codeHash, ReceivedCode);
+                RequestInProcess = false;
+                DialogResult = true;
+            }
+            catch (Exception)
+            {
+                RequestInProcess = false;
+                throw;
+            }
         }
 
         private bool CanAuth()
