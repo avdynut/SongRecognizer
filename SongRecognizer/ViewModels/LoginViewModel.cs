@@ -48,6 +48,19 @@ namespace SongRecognizer.ViewModels
             }
         }
 
+        private string _errorMessage;
+
+        public string ErrorMessage
+        {
+            get => _errorMessage;
+            set
+            {
+                _errorMessage = value;
+                OnPropertyChanged();
+            }
+        }
+
+
         public ICommand QueryPhoneCodeCommand { get; }
         public ICommand AuthCommand { get; }
 
@@ -62,21 +75,21 @@ namespace SongRecognizer.ViewModels
         private async Task QueryPhoneCodeAsync()
         {
             RequestInProcess = true;
+            ErrorMessage = null;
+
             try
             {
                 _codeHash = await _telegramClient.SendCodeRequestAsync(PhoneNumber);
+                SelectedSlideIndex = 1;
             }
             catch (Exception exception)
             {
-
-                throw;
+                ErrorMessage = exception.Message;
             }
             finally
             {
                 RequestInProcess = false;
             }
-
-            SelectedSlideIndex = 1;
         }
 
         private bool CanQueryPhoneCode()
@@ -87,16 +100,20 @@ namespace SongRecognizer.ViewModels
         private async Task AuthAsync()
         {
             RequestInProcess = true;
+            ErrorMessage = null;
+
             try
             {
                 var user = await _telegramClient.MakeAuthAsync(PhoneNumber, _codeHash, ReceivedCode);
-                RequestInProcess = false;
                 DialogResult = true;
             }
-            catch (Exception)
+            catch (Exception exception)
+            {
+                ErrorMessage = exception.Message;
+            }
+            finally
             {
                 RequestInProcess = false;
-                throw;
             }
         }
 

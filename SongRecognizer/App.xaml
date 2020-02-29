@@ -13,10 +13,9 @@
                 <ResourceDictionary Source="pack://application:,,,/MaterialDesignColors;component/Themes/Recommended/Accent/MaterialDesignColor.Lime.xaml"/>
             </ResourceDictionary.MergedDictionaries>
 
-            <Style TargetType="Window">
+            <Style x:Key="WindowStyle" TargetType="Window">
                 <Setter Property="Background" Value="{DynamicResource MaterialDesignPaper}"/>
                 <Setter Property="FontFamily" Value="{DynamicResource MaterialDesignFont}"/>
-                <Setter Property="ResizeMode" Value="CanMinimize"/>
                 <Setter Property="TextElement.FontSize" Value="14"/>
                 <Setter Property="TextElement.FontWeight" Value="Regular"/>
                 <Setter Property="TextElement.Foreground" Value="{DynamicResource MaterialDesignBody}"/>

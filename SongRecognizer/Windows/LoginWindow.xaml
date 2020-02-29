@@ -8,14 +8,16 @@
         xmlns:vm="clr-namespace:SongRecognizer.ViewModels"
         Title="SongRecognizer - Authentification"
         Width="460"
-        Height="180"
+        Height="210"
         d:DataContext="{d:DesignInstance vm:LoginViewModel}"
         local:DialogCloser.DialogResult="{Binding DialogResult}"
+        ResizeMode="NoResize"
+        Style="{StaticResource WindowStyle}"
         WindowStartupLocation="CenterScreen"
-        WindowStyle="ToolWindow"
         mc:Ignorable="d">
-    <Grid HorizontalAlignment="Center" VerticalAlignment="Center">
+    <Grid Margin="20,10">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -25,7 +27,10 @@
                                      AutoApplyTransitionOrigins="True"
                                      SelectedIndex="{Binding SelectedSlideIndex}">
             <StackPanel>
-                <TextBox materialDesign:HintAssist.Hint="Telegram phone number" Text="{Binding PhoneNumber, UpdateSourceTrigger=PropertyChanged}"/>
+                <TextBox Margin="0,3"
+                         materialDesign:HintAssist.Hint="Telegram phone number"
+                         Style="{StaticResource MaterialDesignFloatingHintTextBox}"
+                         Text="{Binding PhoneNumber, UpdateSourceTrigger=PropertyChanged}"/>
                 <Button Command="{Binding QueryPhoneCodeCommand}" IsDefault="True">
                     <materialDesign:PackIcon Width="24"
                                              Height="24"
@@ -33,7 +38,10 @@
                 </Button>
             </StackPanel>
             <StackPanel>
-                <TextBox materialDesign:HintAssist.Hint="Received code" Text="{Binding ReceivedCode, UpdateSourceTrigger=PropertyChanged}"/>
+                <TextBox Margin="0,3"
+                         materialDesign:HintAssist.Hint="Received code"
+                         Style="{StaticResource MaterialDesignFloatingHintTextBox}"
+                         Text="{Binding ReceivedCode, UpdateSourceTrigger=PropertyChanged}"/>
                 <Button Command="{Binding AuthCommand}" IsDefault="True">
                     <materialDesign:PackIcon Width="24"
                                              Height="24"
@@ -44,5 +52,13 @@
         <ProgressBar Grid.Row="2"
                      IsIndeterminate="True"
                      Visibility="{Binding RequestInProcess, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+        <ScrollViewer Grid.Row="3"
+                      MaxHeight="40"
+                      VerticalScrollBarVisibility="Auto">
+            <TextBlock Foreground="{DynamicResource ValidationErrorBrush}"
+                       Text="{Binding ErrorMessage}"
+                       TextWrapping="WrapWithOverflow"/>
+        </ScrollViewer>
+
     </Grid>
 </Window>

@@ -9,6 +9,8 @@
         Width="400"
         Height="450"
         d:DataContext="{d:DesignInstance vm:MainViewModel}"
+        ResizeMode="CanMinimize"
+        Style="{StaticResource WindowStyle}"
         mc:Ignorable="d">
     <Grid Margin="10">
         <Grid.RowDefinitions>
