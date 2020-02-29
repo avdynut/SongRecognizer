@@ -1,6 +1,8 @@
-﻿using NAudio.Wave;
+﻿using MaterialDesignThemes.Wpf;
+using NAudio.Wave;
 using SongRecognizer.Commands;
 using SongRecognizer.Models;
+using SongRecognizer.Views;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -15,13 +17,15 @@ namespace SongRecognizer.ViewModels
 {
     public class MainViewModel : ViewModel
     {
+        private const int ApiId = 1087573;
+        private const string ApiHash = "478d65ed651632ca1cb656e2b9013501";
         private const string YaMelodyBotUsername = "YaMelodyBot";
         private const string FileName = "record.wav";
         private const double RecordDurationSeconds = 3;
         private const int ResponseTimeoutSeconds = 10;
         private const int MinFileSizeBytes = 1024 * 100;
 
-        private readonly TelegramClient _telegramClient;
+        private TelegramClient _telegramClient;
         private TLInputPeerUser _yaMelodyBot;
 
         private State _state;
@@ -52,16 +56,24 @@ namespace SongRecognizer.ViewModels
         public ICommand IdentifySongCommand { get; }
         public ICommand NavigateLinkCommand { get; }
 
-        public MainViewModel(TelegramClient telegramClient)
+        public MainViewModel()
         {
-            _telegramClient = telegramClient ?? throw new ArgumentNullException(nameof(telegramClient));
-
             IdentifySongCommand = new AsyncCommand(IdentifySong, errorHandler: OnError);
             NavigateLinkCommand = new RelayCommand(NavigateLink, () => !string.IsNullOrEmpty(Song?.Link?.ToString()));
         }
 
         public async Task InitializeAsync()
         {
+            _telegramClient = new TelegramClient(ApiId, ApiHash);
+
+            await _telegramClient.ConnectAsync();
+
+            if (!_telegramClient.IsUserAuthorized())
+            {
+                var loginDialog = new LoginDialog { DataContext = new LoginViewModel(_telegramClient) };
+                await DialogHost.Show(loginDialog);
+            }
+
             _yaMelodyBot = await _telegramClient.GetPeerUser(YaMelodyBotUsername);
         }
 

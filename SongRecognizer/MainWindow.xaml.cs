@@ -1,6 +1,6 @@
 ﻿using System.Windows;
 
-namespace SongRecognizer.Windows
+namespace SongRecognizer
 {
     /// <summary>
     /// Interaction logic for MainWindow.xaml

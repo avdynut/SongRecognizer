@@ -1,7 +1,9 @@
-﻿using SongRecognizer.Commands;
+﻿using MaterialDesignThemes.Wpf;
+using SongRecognizer.Commands;
 using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Input;
 using TLSharp.Core;
 
@@ -14,17 +16,6 @@ namespace SongRecognizer.ViewModels
 
         public string PhoneNumber { get; set; }
         public string ReceivedCode { get; set; }
-
-        private bool? dialogResult;
-        public bool? DialogResult
-        {
-            get => dialogResult;
-            set
-            {
-                dialogResult = value;
-                OnPropertyChanged();
-            }
-        }
 
         private int _selectedSlideIndex;
         public int SelectedSlideIndex
@@ -49,7 +40,6 @@ namespace SongRecognizer.ViewModels
         }
 
         private string _errorMessage;
-
         public string ErrorMessage
         {
             get => _errorMessage;
@@ -60,7 +50,6 @@ namespace SongRecognizer.ViewModels
             }
         }
 
-
         public ICommand QueryPhoneCodeCommand { get; }
         public ICommand AuthCommand { get; }
 
@@ -69,7 +58,7 @@ namespace SongRecognizer.ViewModels
             _telegramClient = telegramClient ?? throw new ArgumentNullException(nameof(telegramClient));
 
             QueryPhoneCodeCommand = new AsyncCommand(QueryPhoneCodeAsync, CanQueryPhoneCode, OnError);
-            AuthCommand = new AsyncCommand(AuthAsync, CanAuth, OnError);
+            AuthCommand = new AsyncCommand<IInputElement>(AuthAsync, CanAuth, OnError);
         }
 
         private async Task QueryPhoneCodeAsync()
@@ -97,7 +86,7 @@ namespace SongRecognizer.ViewModels
             return !string.IsNullOrEmpty(PhoneNumber);
         }
 
-        private async Task AuthAsync()
+        private async Task AuthAsync(IInputElement targetElement)
         {
             RequestInProcess = true;
             ErrorMessage = null;
@@ -105,7 +94,7 @@ namespace SongRecognizer.ViewModels
             try
             {
                 var user = await _telegramClient.MakeAuthAsync(PhoneNumber, _codeHash, ReceivedCode);
-                DialogResult = true;
+                DialogHost.CloseDialogCommand.Execute(null, targetElement);
             }
             catch (Exception exception)
             {
@@ -117,9 +106,12 @@ namespace SongRecognizer.ViewModels
             }
         }
 
-        private bool CanAuth()
+        private bool CanAuth(IInputElement targetElement)
         {
-            return !string.IsNullOrEmpty(PhoneNumber) && !string.IsNullOrEmpty(_codeHash) && !string.IsNullOrEmpty(ReceivedCode);
+            return !string.IsNullOrEmpty(PhoneNumber)
+                && !string.IsNullOrEmpty(_codeHash)
+                && !string.IsNullOrEmpty(ReceivedCode)
+                && targetElement != null;
         }
 
         private void OnError(Exception exception)

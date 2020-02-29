@@ -1,17 +1,11 @@
-﻿<Window x:Class="SongRecognizer.Windows.MainWindow"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:vm="clr-namespace:SongRecognizer.ViewModels"
-        Title="SongRecognizer"
-        Width="400"
-        Height="450"
-        d:DataContext="{d:DesignInstance vm:MainViewModel}"
-        ResizeMode="CanMinimize"
-        Style="{StaticResource WindowStyle}"
-        mc:Ignorable="d">
+﻿<UserControl x:Class="SongRecognizer.Views.MainView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:SongRecognizer.ViewModels"
+             d:DataContext="{d:DesignInstance vm:MainViewModel}"
+             mc:Ignorable="d">
     <Grid Margin="10">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -51,4 +45,4 @@
         </StackPanel>
         <TextBlock Grid.Row="3" Text="{Binding State}"/>
     </Grid>
-</Window>
+</UserControl>
