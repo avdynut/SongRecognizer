@@ -2,8 +2,8 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-             xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:md="http://materialdesigninxaml.net/winfx/xaml/themes"
              xmlns:vm="clr-namespace:SongRecognizer.ViewModels"
              Width="460"
              Height="210"
@@ -17,34 +17,34 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <Label Grid.Row="0" Content="The app needs access to telegram bot, please authentificate."/>
-        <materialDesign:Transitioner Grid.Row="1"
-                                     AutoApplyTransitionOrigins="True"
-                                     SelectedIndex="{Binding SelectedSlideIndex}">
+        <md:Transitioner Grid.Row="1"
+                         AutoApplyTransitionOrigins="True"
+                         SelectedIndex="{Binding SelectedSlideIndex}">
             <StackPanel>
                 <TextBox Margin="0,3"
-                         materialDesign:HintAssist.Hint="Telegram phone number"
+                         md:HintAssist.Hint="Telegram phone number"
                          Style="{StaticResource MaterialDesignFloatingHintTextBox}"
                          Text="{Binding PhoneNumber, UpdateSourceTrigger=PropertyChanged}"/>
                 <Button Command="{Binding QueryPhoneCodeCommand}" IsDefault="True">
-                    <materialDesign:PackIcon Width="24"
-                                             Height="24"
-                                             Kind="NavigateNext"/>
+                    <md:PackIcon Width="24"
+                                 Height="24"
+                                 Kind="NavigateNext"/>
                 </Button>
             </StackPanel>
             <StackPanel>
                 <TextBox Margin="0,3"
-                         materialDesign:HintAssist.Hint="Received code"
+                         md:HintAssist.Hint="Received code"
                          Style="{StaticResource MaterialDesignFloatingHintTextBox}"
                          Text="{Binding ReceivedCode, UpdateSourceTrigger=PropertyChanged}"/>
                 <Button Command="{Binding AuthCommand}"
                         CommandParameter="{Binding RelativeSource={RelativeSource Mode=Self}}"
                         IsDefault="True">
-                    <materialDesign:PackIcon Width="24"
-                                             Height="24"
-                                             Kind="NavigateNext"/>
+                    <md:PackIcon Width="24"
+                                 Height="24"
+                                 Kind="NavigateNext"/>
                 </Button>
             </StackPanel>
-        </materialDesign:Transitioner>
+        </md:Transitioner>
         <ProgressBar Grid.Row="2"
                      IsIndeterminate="True"
                      Visibility="{Binding RequestInProcess, Converter={StaticResource BooleanToVisibilityConverter}}"/>

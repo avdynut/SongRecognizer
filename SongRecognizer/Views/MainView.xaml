@@ -3,46 +3,58 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:md="http://materialdesigninxaml.net/winfx/xaml/themes"
              xmlns:vm="clr-namespace:SongRecognizer.ViewModels"
              d:DataContext="{d:DesignInstance vm:MainViewModel}"
              mc:Ignorable="d">
-    <Grid Margin="10">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
+    <DockPanel>
+        <StatusBar DockPanel.Dock="Bottom">
+            <TextBlock Text="{Binding State}"/>
+        </StatusBar>
+        <Grid Margin="10">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
 
-        <Button Grid.Row="0"
-                Command="{Binding IdentifySongCommand}"
-                Content="Identify Song">
-            <Button.Triggers>
-                <EventTrigger RoutedEvent="Button.Click">
-                    <EventTrigger.Actions>
-                        <BeginStoryboard>
-                            <Storyboard TargetProperty="Value" TargetName="Progress">
-                                <DoubleAnimation From="0"
-                                                 To="100"
-                                                 Duration="{Binding RecordDuration}"/>
-                            </Storyboard>
-                        </BeginStoryboard>
-                    </EventTrigger.Actions>
-                </EventTrigger>
-            </Button.Triggers>
-        </Button>
-        <ProgressBar Name="Progress"
-                     Grid.Row="1"
-                     Height="20"
-                     Style="{StaticResource MaterialDesignCircularProgressBar}"/>
-        <StackPanel Grid.Row="2">
-            <TextBox IsReadOnly="True" Text="{Binding Song.Result, Mode=OneWay}"/>
-            <TextBlock>
-                <Hyperlink Command="{Binding NavigateLinkCommand}" NavigateUri="{Binding Song.Link}">
-                    <TextBlock Text="{Binding Song.LinkText, Mode=OneWay}"/>
-                </Hyperlink>
-            </TextBlock>
-        </StackPanel>
-        <TextBlock Grid.Row="3" Text="{Binding State}"/>
-    </Grid>
+            <Button Grid.Row="0"
+                    Command="{Binding IdentifySongCommand}"
+                    Content="Identify Song">
+                <Button.Triggers>
+                    <EventTrigger RoutedEvent="Button.Click">
+                        <EventTrigger.Actions>
+                            <BeginStoryboard>
+                                <Storyboard TargetProperty="Value" TargetName="Progress">
+                                    <DoubleAnimation From="0"
+                                                     To="100"
+                                                     Duration="{Binding RecordDuration}"/>
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </EventTrigger.Actions>
+                    </EventTrigger>
+                </Button.Triggers>
+            </Button>
+            <ProgressBar Name="Progress"
+                         Grid.Row="1"
+                         Height="20"
+                         Style="{StaticResource MaterialDesignCircularProgressBar}"/>
+            <ScrollViewer Grid.Row="2"
+                          MaxHeight="40"
+                          VerticalScrollBarVisibility="Auto">
+                <TextBlock Foreground="{DynamicResource ValidationErrorBrush}"
+                           Text="{Binding ErrorMessage}"
+                           TextWrapping="WrapWithOverflow"/>
+            </ScrollViewer>
+            <StackPanel Grid.Row="3">
+                <TextBox IsReadOnly="True" Text="{Binding Song.Result, Mode=OneWay}"/>
+                <TextBlock>
+                    <Hyperlink Command="{Binding NavigateLinkCommand}" NavigateUri="{Binding Song.Link}">
+                        <TextBlock Text="{Binding Song.LinkText, Mode=OneWay}"/>
+                    </Hyperlink>
+                </TextBlock>
+            </StackPanel>
+        </Grid>
+    </DockPanel>
 </UserControl>

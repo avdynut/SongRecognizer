@@ -28,8 +28,19 @@ namespace SongRecognizer.ViewModels
         private TelegramClient _telegramClient;
         private TLInputPeerUser _yaMelodyBot;
 
-        private State _state;
-        public State State
+        private Song _song;
+        public Song Song
+        {
+            get => _song;
+            private set
+            {
+                _song = value;
+                OnPropertyChanged();
+            }
+        }
+
+        private string _state;
+        public string State
         {
             get => _state;
             set
@@ -40,16 +51,29 @@ namespace SongRecognizer.ViewModels
             }
         }
 
-        private Song song;
-        public Song Song
+        private string _errorMessage;
+        public string ErrorMessage
         {
-            get => song;
-            private set
+            get => _errorMessage;
+            set
             {
-                song = value;
+                _errorMessage = value;
                 OnPropertyChanged();
             }
         }
+
+        private bool _isConnecting;
+        public bool IsConnecting
+        {
+            get => _isConnecting;
+            set
+            {
+                _isConnecting = value;
+                OnPropertyChanged();
+            }
+        }
+
+        private bool _isReady;
 
         public Duration RecordDuration { get; } = TimeSpan.FromSeconds(RecordDurationSeconds);
 
@@ -58,28 +82,41 @@ namespace SongRecognizer.ViewModels
 
         public MainViewModel()
         {
-            IdentifySongCommand = new AsyncCommand(IdentifySong, errorHandler: OnError);
+            IdentifySongCommand = new AsyncCommand(IdentifySong, () => _isReady, OnError);
             NavigateLinkCommand = new RelayCommand(NavigateLink, () => !string.IsNullOrEmpty(Song?.Link?.ToString()));
         }
 
         public async Task InitializeAsync()
         {
-            _telegramClient = new TelegramClient(ApiId, ApiHash);
+            IsConnecting = true;
 
-            await _telegramClient.ConnectAsync();
+            bool connected = await HandleTask(() => ConnectAsync());
 
-            if (!_telegramClient.IsUserAuthorized())
+            if (connected)
             {
-                var loginDialog = new LoginDialog { DataContext = new LoginViewModel(_telegramClient) };
-                await DialogHost.Show(loginDialog);
+                if (!_telegramClient.IsUserAuthorized())
+                {
+                    var loginDialog = new LoginDialog { DataContext = new LoginViewModel(_telegramClient) };
+                    await DialogHost.Show(loginDialog);
+                }
+
+                _yaMelodyBot = await HandleTask(() => _telegramClient.GetPeerUser(YaMelodyBotUsername));
+                _isReady = _yaMelodyBot != null;
             }
 
-            _yaMelodyBot = await _telegramClient.GetPeerUser(YaMelodyBotUsername);
+            IsConnecting = false;
+        }
+
+        private async Task<bool> ConnectAsync()
+        {
+            _telegramClient = new TelegramClient(ApiId, ApiHash);
+            await _telegramClient.ConnectAsync();
+            return true;
         }
 
         private async Task IdentifySong()
         {
-            State = State.Recording;
+            State = "Recording";
             Song = null;
 
             var captureInstance = new WasapiLoopbackCapture();
@@ -102,53 +139,58 @@ namespace SongRecognizer.ViewModels
             }
             else
             {
-                State = State.Failed;
+                ErrorMessage = "Incorrect record";
             }
+
+            State = null;
         }
 
         private async Task SendRecord()
         {
-            State = State.SendingRecord;
-            var fileResult = await _telegramClient.UploadFile(FileName, new StreamReader(FileName));
+            State = "Sending Record";
+            var fileResult = await HandleTask(() =>
+                _telegramClient.UploadFile(FileName, new StreamReader(FileName)));
 
             var attributes = new TLVector<TLAbsDocumentAttribute> { new TLDocumentAttributeFilename { FileName = FileName } };
-            var sendResult = await _telegramClient.SendUploadedDocument(
-                _yaMelodyBot, fileResult, "", "audio/vnd.wave", attributes);
+            var sendResult = await HandleTask(() =>
+                _telegramClient.SendUploadedDocument(_yaMelodyBot, fileResult, "", "audio/vnd.wave", attributes));
         }
 
         private async void WaitForResponse()
         {
-            State = State.WaitingForResponse;
+            State = "Waiting for Response";
             var startTime = DateTime.Now;
 
             while (true)
             {
-                var message = await _telegramClient.GetLastMessage(_yaMelodyBot);
+                var message = await HandleTask(() => _telegramClient.GetLastMessage(_yaMelodyBot));
+                if (message is null)
+                    continue;
 
                 if (message.Message.Contains("..."))    // 'Обрабатываю...'
                 {
-                    State = State.Identifying;
+                    State = "Identifying";
                 }
                 else if (message.Message.Contains("music.yandex.ru"))
                 {
-                    State = State.Completed;
                     Song = new Song(message.Message);
                     break;
                 }
                 else
                 {
-                    State = State.Completed;
                     Song = new Song();
                     break;
                 }
 
                 if ((DateTime.Now - startTime).Seconds > ResponseTimeoutSeconds)
                 {
-                    State = State.Failed;
+                    State = "Responce is not received";
                     break;
                 }
                 await Task.Delay(200);
             }
+
+            State = null;
         }
 
         private void NavigateLink()
@@ -157,10 +199,28 @@ namespace SongRecognizer.ViewModels
             Process.Start(processInfo);
         }
 
+        private async Task<T> HandleTask<T>(Func<Task<T>> task)
+        {
+            ErrorMessage = null;
+            T result = default;
+
+            try
+            {
+                result = await task();
+            }
+            catch (Exception exception)
+            {
+                OnError(exception);
+            }
+
+            return result;
+        }
+
         private void OnError(Exception exception)
         {
             Debug.WriteLine(exception);
-            State = State.Failed;
+            ErrorMessage = exception.Message;
+            State = "Error";
         }
     }
 }
