@@ -1,4 +1,5 @@
-﻿using SongRecognizer.ViewModels;
+﻿using SongRecognizer.Commands;
+using SongRecognizer.ViewModels;
 using System.Windows;
 using System.Windows.Threading;
 
@@ -9,12 +10,12 @@ namespace SongRecognizer
     /// </summary>
     public partial class App : Application
     {
-        private async void OnStartup(object sender, StartupEventArgs e)
+        private void OnStartup(object sender, StartupEventArgs e)
         {
             var mainViewModel = new MainViewModel();
             MainWindow = new MainWindow { DataContext = mainViewModel };
             MainWindow.Show();
-            await mainViewModel.InitializeAsync();
+            mainViewModel.InitializeAsync().FireAndForgetSafeAsync();
         }
 
         private void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)

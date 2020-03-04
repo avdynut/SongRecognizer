@@ -49,11 +49,12 @@
                      IsIndeterminate="True"
                      Visibility="{Binding RequestInProcess, Converter={StaticResource BooleanToVisibilityConverter}}"/>
         <ScrollViewer Grid.Row="3"
-                      MaxHeight="40"
+                      MaxHeight="43"
                       VerticalScrollBarVisibility="Auto">
-            <TextBlock Foreground="{DynamicResource ValidationErrorBrush}"
-                       Text="{Binding ErrorMessage}"
-                       TextWrapping="WrapWithOverflow"/>
+            <TextBox Foreground="{DynamicResource ValidationErrorBrush}"
+                     IsReadOnly="True"
+                     Text="{Binding ErrorMessage}"
+                     TextWrapping="WrapWithOverflow"/>
         </ScrollViewer>
 
     </Grid>

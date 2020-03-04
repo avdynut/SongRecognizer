@@ -21,6 +21,7 @@ namespace SongRecognizer.ViewModels
         private const string ApiHash = "478d65ed651632ca1cb656e2b9013501";
         private const string YaMelodyBotUsername = "YaMelodyBot";
         private const string FileName = "record.wav";
+        private const string IdentifyTitle = "Identify";
         private const double RecordDurationSeconds = 3;
         private const int ResponseTimeoutSeconds = 10;
         private const int MinFileSizeBytes = 1024 * 100;
@@ -39,7 +40,7 @@ namespace SongRecognizer.ViewModels
             }
         }
 
-        private string _state;
+        private string _state = "Loading...";
         public string State
         {
             get => _state;
@@ -62,13 +63,13 @@ namespace SongRecognizer.ViewModels
             }
         }
 
-        private bool _isConnecting;
-        public bool IsConnecting
+        private bool _isInProcess;
+        public bool IsInProcess
         {
-            get => _isConnecting;
+            get => _isInProcess;
             set
             {
-                _isConnecting = value;
+                _isInProcess = value;
                 OnPropertyChanged();
             }
         }
@@ -88,7 +89,8 @@ namespace SongRecognizer.ViewModels
 
         public async Task InitializeAsync()
         {
-            IsConnecting = true;
+            IsInProcess = true;
+            State = "Connecting...";
 
             bool connected = await HandleTask(() => ConnectAsync());
 
@@ -102,9 +104,11 @@ namespace SongRecognizer.ViewModels
 
                 _yaMelodyBot = await HandleTask(() => _telegramClient.GetPeerUser(YaMelodyBotUsername));
                 _isReady = _yaMelodyBot != null;
+                CommandManager.InvalidateRequerySuggested();
             }
 
-            IsConnecting = false;
+            State = IdentifyTitle;
+            IsInProcess = false;
         }
 
         private async Task<bool> ConnectAsync()
@@ -116,8 +120,10 @@ namespace SongRecognizer.ViewModels
 
         private async Task IdentifySong()
         {
-            State = "Recording";
+            IsInProcess = true;
+            State = "Recording...";
             Song = null;
+            ErrorMessage = null;
 
             var captureInstance = new WasapiLoopbackCapture();
             var audioWriter = new WaveFileWriter(FileName, captureInstance.WaveFormat);
@@ -135,19 +141,20 @@ namespace SongRecognizer.ViewModels
             if (fileInfo.Exists && fileInfo.Length > MinFileSizeBytes)
             {
                 await SendRecord();
-                WaitForResponse();
+                await WaitForResponse();
             }
             else
             {
                 ErrorMessage = "Incorrect record";
             }
 
-            State = null;
+            State = IdentifyTitle;
+            IsInProcess = false;
         }
 
         private async Task SendRecord()
         {
-            State = "Sending Record";
+            State = "Sending Record...";
             var fileResult = await HandleTask(() =>
                 _telegramClient.UploadFile(FileName, new StreamReader(FileName)));
 
@@ -156,9 +163,9 @@ namespace SongRecognizer.ViewModels
                 _telegramClient.SendUploadedDocument(_yaMelodyBot, fileResult, "", "audio/vnd.wave", attributes));
         }
 
-        private async void WaitForResponse()
+        private async Task WaitForResponse()
         {
-            State = "Waiting for Response";
+            State = "Waiting for Response...";
             var startTime = DateTime.Now;
 
             while (true)
@@ -169,7 +176,7 @@ namespace SongRecognizer.ViewModels
 
                 if (message.Message.Contains("..."))    // 'Обрабатываю...'
                 {
-                    State = "Identifying";
+                    State = "Identifying...";
                 }
                 else if (message.Message.Contains("music.yandex.ru"))
                 {
@@ -184,19 +191,26 @@ namespace SongRecognizer.ViewModels
 
                 if ((DateTime.Now - startTime).Seconds > ResponseTimeoutSeconds)
                 {
-                    State = "Responce is not received";
+                    ErrorMessage = "Responce is not received";
                     break;
                 }
                 await Task.Delay(200);
             }
 
-            State = null;
+            State = IdentifyTitle;
         }
 
         private void NavigateLink()
         {
-            var processInfo = new ProcessStartInfo { FileName = Song.Link.ToString(), UseShellExecute = true };
-            Process.Start(processInfo);
+            try
+            {
+                var processInfo = new ProcessStartInfo { FileName = Song.Link.ToString(), UseShellExecute = true };
+                Process.Start(processInfo);
+            }
+            catch (Exception exception)
+            {
+                OnError(exception);
+            }
         }
 
         private async Task<T> HandleTask<T>(Func<Task<T>> task)
@@ -220,7 +234,7 @@ namespace SongRecognizer.ViewModels
         {
             Debug.WriteLine(exception);
             ErrorMessage = exception.Message;
-            State = "Error";
+            State = IdentifyTitle;
         }
     }
 }
