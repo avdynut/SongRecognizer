@@ -1,6 +1,7 @@
 ﻿using SongRecognizer.Commands;
 using SongRecognizer.ViewModels;
 using System.Windows;
+using System.Windows.Shell;
 using System.Windows.Threading;
 
 namespace SongRecognizer
@@ -10,10 +11,12 @@ namespace SongRecognizer
     /// </summary>
     public partial class App : Application
     {
+
         private void OnStartup(object sender, StartupEventArgs e)
         {
-            var mainViewModel = new MainViewModel();
-            MainWindow = new MainWindow { DataContext = mainViewModel };
+            var taskBarItemInfo = new TaskbarItemInfo();
+            var mainViewModel = new MainViewModel(taskBarItemInfo);
+            MainWindow = new MainWindow { DataContext = mainViewModel, TaskbarItemInfo = taskBarItemInfo };
             MainWindow.Show();
             mainViewModel.InitializeAsync().FireAndForgetSafeAsync();
         }

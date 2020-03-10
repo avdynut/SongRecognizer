@@ -9,6 +9,7 @@ using System.IO;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Shell;
 using TeleSharp.TL;
 using TLSharp.Core;
 using TLSharp.Core.Utils;
@@ -26,6 +27,7 @@ namespace SongRecognizer.ViewModels
         private const int ResponseTimeoutSeconds = 10;
         private const int MinFileSizeBytes = 1024 * 100;
 
+        private readonly TaskbarItemInfo _taskBarInfo;
         private TelegramClient _telegramClient;
         private TLInputPeerUser _yaMelodyBot;
 
@@ -70,6 +72,7 @@ namespace SongRecognizer.ViewModels
             set
             {
                 _isInProcess = value;
+                _taskBarInfo.ProgressState = _isInProcess ? TaskbarItemProgressState.Indeterminate : TaskbarItemProgressState.None;
                 OnPropertyChanged();
             }
         }
@@ -81,8 +84,10 @@ namespace SongRecognizer.ViewModels
         public ICommand IdentifySongCommand { get; }
         public ICommand NavigateLinkCommand { get; }
 
-        public MainViewModel()
+        public MainViewModel(TaskbarItemInfo taskBarInfo)
         {
+            _taskBarInfo = taskBarInfo ?? throw new ArgumentNullException(nameof(taskBarInfo));
+
             IdentifySongCommand = new AsyncCommand(IdentifySong, () => _isReady, OnError);
             NavigateLinkCommand = new RelayCommand(NavigateLink, () => !string.IsNullOrEmpty(Song?.Link?.ToString()));
         }
@@ -98,8 +103,10 @@ namespace SongRecognizer.ViewModels
             {
                 if (!_telegramClient.IsUserAuthorized())
                 {
+                    IsInProcess = false;
                     var loginDialog = new LoginDialog { DataContext = new LoginViewModel(_telegramClient) };
                     await DialogHost.Show(loginDialog);
+                    IsInProcess = true;
                 }
 
                 _yaMelodyBot = await HandleTask(() => _telegramClient.GetPeerUser(YaMelodyBotUsername));

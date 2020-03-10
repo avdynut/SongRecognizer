@@ -50,6 +50,7 @@
                      Visibility="{Binding RequestInProcess, Converter={StaticResource BooleanToVisibilityConverter}}"/>
         <ScrollViewer Grid.Row="3"
                       MaxHeight="43"
+                      HorizontalAlignment="Center"
                       VerticalScrollBarVisibility="Auto">
             <TextBox Foreground="{DynamicResource ValidationErrorBrush}"
                      IsReadOnly="True"
