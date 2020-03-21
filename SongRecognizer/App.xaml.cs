@@ -1,5 +1,4 @@
-﻿using SongRecognizer.Commands;
-using SongRecognizer.ViewModels;
+﻿using SongRecognizer.ViewModels;
 using System.Windows;
 using System.Windows.Shell;
 using System.Windows.Threading;
@@ -11,14 +10,13 @@ namespace SongRecognizer
     /// </summary>
     public partial class App : Application
     {
-
         private void OnStartup(object sender, StartupEventArgs e)
         {
             var taskBarItemInfo = new TaskbarItemInfo();
             var mainViewModel = new MainViewModel(taskBarItemInfo);
             MainWindow = new MainWindow { DataContext = mainViewModel, TaskbarItemInfo = taskBarItemInfo };
+            // move taskbariteminfo
             MainWindow.Show();
-            mainViewModel.InitializeAsync().FireAndForgetSafeAsync();
         }
 
         private void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)

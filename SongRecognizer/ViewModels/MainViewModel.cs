@@ -5,14 +5,19 @@ using SongRecognizer.Models;
 using SongRecognizer.Views;
 using System;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
+using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Shell;
-using TeleSharp.TL;
-using TLSharp.Core;
-using TLSharp.Core.Utils;
+using System.Windows.Threading;
+using TdLib;
+using static TdLib.TdApi;
+using static TdLib.TdApi.AuthorizationState;
+using static TdLib.TdApi.Update;
 
 namespace SongRecognizer.ViewModels
 {
@@ -25,11 +30,14 @@ namespace SongRecognizer.ViewModels
         private const string IdentifyTitle = "Identify";
         private const double RecordDurationSeconds = 3;
         private const int ResponseTimeoutSeconds = 10;
-        private const int MinFileSizeBytes = 1024 * 100;
+        private const int MinFileSizeBytes = 1024 * 100; // 100KB
 
         private readonly TaskbarItemInfo _taskBarInfo;
-        private TelegramClient _telegramClient;
-        private TLInputPeerUser _yaMelodyBot;
+        private readonly TdClient _telegramClient = new TdClient();
+        private int _botId;
+        private Chat _botChat;
+        private int _imageId;
+        private bool _isReady;
 
         private Song _song;
         public Song Song
@@ -65,7 +73,7 @@ namespace SongRecognizer.ViewModels
             }
         }
 
-        private bool _isInProcess;
+        private bool _isInProcess = true;
         public bool IsInProcess
         {
             get => _isInProcess;
@@ -76,8 +84,6 @@ namespace SongRecognizer.ViewModels
                 OnPropertyChanged();
             }
         }
-
-        private bool _isReady;
 
         public Duration RecordDuration { get; } = TimeSpan.FromSeconds(RecordDurationSeconds);
 
@@ -90,39 +96,134 @@ namespace SongRecognizer.ViewModels
 
             IdentifySongCommand = new AsyncCommand(IdentifySong, () => _isReady, OnError);
             NavigateLinkCommand = new RelayCommand(NavigateLink, () => !string.IsNullOrEmpty(Song?.Link?.ToString()));
+
+            InitTdLog();
+            _telegramClient.UpdateReceived += OnUpdateReceived;
         }
 
-        public async Task InitializeAsync()
+        private async void OnUpdateReceived(object sender, Update update)
         {
-            IsInProcess = true;
-            State = "Connecting...";
-
-            bool connected = await HandleTask(() => ConnectAsync());
-
-            if (connected)
+            switch (update)
             {
-                if (!_telegramClient.IsUserAuthorized())
+                case UpdateAuthorizationState authorizationState when authorizationState.AuthorizationState is AuthorizationStateWaitTdlibParameters:
+                    await SetTdLibParametersAsync();
+                    break;
+                case UpdateAuthorizationState authorizationState when authorizationState.AuthorizationState is AuthorizationStateWaitEncryptionKey:
+                    await _telegramClient.CheckDatabaseEncryptionKeyAsync();
+                    break;
+                case UpdateAuthorizationState authorizationState when authorizationState.AuthorizationState is AuthorizationStateWaitPhoneNumber:
+                    await OpenAuthDialogAsync();
+                    break;
+                case UpdateAuthorizationState authorizationState when authorizationState.AuthorizationState is AuthorizationStateWaitCode:
+                    // call in dialog
+                    break;
+                case UpdateAuthorizationState authorizationState when authorizationState.AuthorizationState is AuthorizationStateReady:
+                    await SearchMusicBotAsync();
+                    break;
+                case UpdateMessageSendFailed message when message.Message.SenderUserId == _botId:
+                    OnError("Message was not sent");
+                    break;
+                case UpdateMessageSendSucceeded message when message.Message.SenderUserId == _botId:
+                    // message successfully sent
+                    break;
+                case UpdateNewMessage message when message.Message.SenderUserId == _botId:
+                    await ParseMessageAsync(message.Message);
+                    break;
+                case UpdateFile file when file.File.Id == _imageId:
+                    OnFileReceived(file.File.Local);
+                    break;
+                case UpdateConnectionState connectionState:
+                    break;
+            }
+        }
+
+        private async Task OpenAuthDialogAsync()
+        {
+            await Dispatcher.CurrentDispatcher.BeginInvoke(async () =>
+            {
+                var loginDialog = new LoginDialog { DataContext = new LoginViewModel(_telegramClient) };
+                await DialogHost.Show(loginDialog);
+            });
+        }
+
+        private void OnFileReceived(LocalFile file)
+        {
+            if (file.IsDownloadingCompleted)
+            {
+                //var processInfo = new ProcessStartInfo
+                //{
+                //    FileName = file.Path,
+                //    UseShellExecute = true
+                //};
+                //Process.Start(processInfo);
+
+                // todo: add image
+            }
+        }
+
+        private async Task ParseMessageAsync(Message message)
+        {
+            if (message.Content is MessageContent.MessageText messageText)
+            {
+                var image = messageText.WebPage?.Photo?.Sizes?.LastOrDefault()?.Photo;
+                if (image != null)
                 {
-                    IsInProcess = false;
-                    var loginDialog = new LoginDialog { DataContext = new LoginViewModel(_telegramClient) };
-                    await DialogHost.Show(loginDialog);
-                    IsInProcess = true;
+                    _imageId = image.Id;
+                    var imageFile = await _telegramClient.DownloadFileAsync(_imageId, priority: 20);
+                }
+                else
+                {
+
                 }
 
-                _yaMelodyBot = await HandleTask(() => _telegramClient.GetPeerUser(YaMelodyBotUsername));
-                _isReady = _yaMelodyBot != null;
-                CommandManager.InvalidateRequerySuggested();
+                //if (message.Message.Contains("..."))    // 'Обрабатываю...'
+                //{
+                //    State = "Identifying...";
+                //}
+                //else if (message.Message.Contains("music.yandex.ru"))
+                //{
+                //    Song = new Song(message.Message);
+                //}
+                //else
+                //{
+                //    Song = new Song();
+                //}
             }
-
-            State = IdentifyTitle;
-            IsInProcess = false;
+            var messageIds = new long[] { message.Id };
+            await _telegramClient.ViewMessagesAsync(message.ChatId, messageIds, true);
         }
 
-        private async Task<bool> ConnectAsync()
+        private async Task SearchMusicBotAsync()
         {
-            _telegramClient = new TelegramClient(ApiId, ApiHash);
-            await _telegramClient.ConnectAsync();
-            return true;
+            _botChat = await _telegramClient.SearchPublicChatAsync(YaMelodyBotUsername);
+            _botId = (_botChat.Type as ChatType.ChatTypePrivate).UserId;
+            var notifSettings = new ChatNotificationSettings { MuteFor = int.MaxValue };
+            await _telegramClient.SetChatNotificationSettingsAsync(_botChat.Id, notifSettings);
+            //var startMessage = _client.SendBotStartMessageAsync(_botId, botChat.Id, "a");
+
+            _isReady = true;
+            CommandManager.InvalidateRequerySuggested();
+        }
+
+        private Task SetTdLibParametersAsync()
+        {
+            var parameters = new TdlibParameters
+            {
+                ApiId = ApiId,
+                ApiHash = ApiHash,
+                ApplicationVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString(),
+                DeviceModel = "PC",
+                SystemLanguageCode = CultureInfo.CurrentCulture.TwoLetterISOLanguageName,
+                SystemVersion = Environment.OSVersion.ToString()
+            };
+            return _telegramClient.SetTdlibParametersAsync(parameters);
+        }
+
+        private void InitTdLog()
+        {
+            TdLog.SetVerbosityLevel(2);
+            TdLog.SetFatalErrorCallback(OnError);
+            TdLog.SetFilePath("tgc_log.txt");
         }
 
         private async Task IdentifySong()
@@ -148,7 +249,6 @@ namespace SongRecognizer.ViewModels
             if (fileInfo.Exists && fileInfo.Length > MinFileSizeBytes)
             {
                 await SendRecord();
-                await WaitForResponse();
             }
             else
             {
@@ -162,49 +262,10 @@ namespace SongRecognizer.ViewModels
         private async Task SendRecord()
         {
             State = "Sending Record...";
-            var fileResult = await HandleTask(() =>
-                _telegramClient.UploadFile(FileName, new StreamReader(FileName)));
 
-            var attributes = new TLVector<TLAbsDocumentAttribute> { new TLDocumentAttributeFilename { FileName = FileName } };
-            var sendResult = await HandleTask(() =>
-                _telegramClient.SendUploadedDocument(_yaMelodyBot, fileResult, "", "audio/vnd.wave", attributes));
-        }
-
-        private async Task WaitForResponse()
-        {
-            State = "Waiting for Response...";
-            var startTime = DateTime.Now;
-
-            while (true)
-            {
-                var message = await HandleTask(() => _telegramClient.GetLastMessage(_yaMelodyBot));
-                if (message is null)
-                    continue;
-
-                if (message.Message.Contains("..."))    // 'Обрабатываю...'
-                {
-                    State = "Identifying...";
-                }
-                else if (message.Message.Contains("music.yandex.ru"))
-                {
-                    Song = new Song(message.Message);
-                    break;
-                }
-                else
-                {
-                    Song = new Song();
-                    break;
-                }
-
-                if ((DateTime.Now - startTime).Seconds > ResponseTimeoutSeconds)
-                {
-                    ErrorMessage = "Responce is not received";
-                    break;
-                }
-                await Task.Delay(200);
-            }
-
-            State = IdentifyTitle;
+            var file = new InputFile.InputFileLocal { Path = FileName };
+            var audio = new InputMessageContent.InputMessageAudio { Audio = file, Duration = (int)RecordDurationSeconds };
+            var message = await _telegramClient.SendMessageAsync(chatId: _botChat.Id, inputMessageContent: audio);
         }
 
         private void NavigateLink()
@@ -220,27 +281,34 @@ namespace SongRecognizer.ViewModels
             }
         }
 
-        private async Task<T> HandleTask<T>(Func<Task<T>> task)
-        {
-            ErrorMessage = null;
-            T result = default;
+        //private async Task<T> HandleTask<T>(Func<Task<T>> task)
+        //{
+        //    ErrorMessage = null;
+        //    T result = default;
 
-            try
-            {
-                result = await task();
-            }
-            catch (Exception exception)
-            {
-                OnError(exception);
-            }
+        //    try
+        //    {
+        //        result = await task();
+        //    }
+        //    catch (Exception exception)
+        //    {
+        //        OnError(exception);
+        //    }
 
-            return result;
-        }
+        //    return result;
+        //}
 
         private void OnError(Exception exception)
         {
             Debug.WriteLine(exception);
             ErrorMessage = exception.Message;
+            State = IdentifyTitle;
+        }
+
+        private void OnError(string error)
+        {
+            Debug.WriteLine(error);
+            ErrorMessage = error;
             State = IdentifyTitle;
         }
     }

@@ -5,14 +5,13 @@ using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
-using TLSharp.Core;
+using TdLib;
 
 namespace SongRecognizer.ViewModels
 {
     public class LoginViewModel : ViewModel
     {
-        private readonly TelegramClient _telegramClient;
-        private string _codeHash;
+        private readonly TdClient _telegramClient;
 
         public string PhoneNumber { get; set; }
         public string ReceivedCode { get; set; }
@@ -53,7 +52,7 @@ namespace SongRecognizer.ViewModels
         public ICommand QueryPhoneCodeCommand { get; }
         public ICommand AuthCommand { get; }
 
-        public LoginViewModel(TelegramClient telegramClient)
+        public LoginViewModel(TdClient telegramClient)
         {
             _telegramClient = telegramClient ?? throw new ArgumentNullException(nameof(telegramClient));
 
@@ -68,7 +67,7 @@ namespace SongRecognizer.ViewModels
 
             try
             {
-                _codeHash = await _telegramClient.SendCodeRequestAsync(PhoneNumber);
+                await _telegramClient.SetAuthenticationPhoneNumberAsync(PhoneNumber);
                 SelectedSlideIndex = 1;
             }
             catch (Exception exception)
@@ -93,7 +92,7 @@ namespace SongRecognizer.ViewModels
 
             try
             {
-                var user = await _telegramClient.MakeAuthAsync(PhoneNumber, _codeHash, ReceivedCode);
+                await _telegramClient.CheckAuthenticationCodeAsync(ReceivedCode);
                 DialogHost.CloseDialogCommand.Execute(null, targetElement);
             }
             catch (Exception exception)
@@ -109,7 +108,6 @@ namespace SongRecognizer.ViewModels
         private bool CanAuth(IInputElement targetElement)
         {
             return !string.IsNullOrEmpty(PhoneNumber)
-                && !string.IsNullOrEmpty(_codeHash)
                 && !string.IsNullOrEmpty(ReceivedCode)
                 && targetElement != null;
         }
