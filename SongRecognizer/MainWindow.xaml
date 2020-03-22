@@ -26,7 +26,7 @@
     <Window.TaskbarItemInfo>
         <TaskbarItemInfo ProgressState="{Binding IsInProcess, Converter={StaticResource BoolToIntermediateStateConverter}}"/>
     </Window.TaskbarItemInfo>
-    <md:DialogHost>
+    <md:DialogHost IsOpen="{Binding IsAuthRequired}">
         <md:DialogHost.DialogContent>
             <views:LoginDialog/>
         </md:DialogHost.DialogContent>

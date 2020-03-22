@@ -1,8 +1,6 @@
-﻿using MaterialDesignThemes.Wpf;
-using NAudio.Wave;
+﻿using NAudio.Wave;
 using SongRecognizer.Commands;
 using SongRecognizer.Models;
-using SongRecognizer.Views;
 using System;
 using System.Diagnostics;
 using System.Globalization;
@@ -12,7 +10,6 @@ using System.Reflection;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
-using System.Windows.Threading;
 using TdLib;
 using static TdLib.TdApi;
 using static TdLib.TdApi.AuthorizationState;
@@ -83,6 +80,36 @@ namespace SongRecognizer.ViewModels
             }
         }
 
+        #region Login Dialog
+        public string PhoneNumber { get; set; }
+        public string ReceivedCode { get; set; }
+
+        private bool _isAuthRequired;
+        public bool IsAuthRequired
+        {
+            get => _isAuthRequired;
+            set
+            {
+                _isAuthRequired = value;
+                OnPropertyChanged();
+            }
+        }
+
+        private int _selectedSlideIndex;
+        public int SelectedSlideIndex
+        {
+            get => _selectedSlideIndex;
+            set
+            {
+                _selectedSlideIndex = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public ICommand QueryPhoneCodeCommand { get; }
+        public ICommand AuthCommand { get; }
+        #endregion
+
         public Duration RecordDuration { get; } = TimeSpan.FromSeconds(RecordDurationSeconds);
 
         public ICommand IdentifySongCommand { get; }
@@ -92,6 +119,8 @@ namespace SongRecognizer.ViewModels
         {
             IdentifySongCommand = new AsyncCommand(IdentifySong, () => _isReady, OnError);
             NavigateLinkCommand = new RelayCommand(NavigateLink, () => !string.IsNullOrEmpty(Song?.Link?.ToString()));
+            QueryPhoneCodeCommand = new AsyncCommand(QueryPhoneCodeAsync, CanQueryPhoneCode, OnError);
+            AuthCommand = new AsyncCommand(AuthAsync, CanAuth, OnError);
 
             InitTdLog();
             _telegramClient.UpdateReceived += OnUpdateReceived;
@@ -108,12 +137,15 @@ namespace SongRecognizer.ViewModels
                     await _telegramClient.CheckDatabaseEncryptionKeyAsync();
                     break;
                 case UpdateAuthorizationState authorizationState when authorizationState.AuthorizationState is AuthorizationStateWaitPhoneNumber:
-                    await OpenAuthDialogAsync();
+                    IsInProcess = false;
+                    IsAuthRequired = true;
                     break;
                 case UpdateAuthorizationState authorizationState when authorizationState.AuthorizationState is AuthorizationStateWaitCode:
-                    // call in dialog
+                    SelectedSlideIndex = 1;
                     break;
                 case UpdateAuthorizationState authorizationState when authorizationState.AuthorizationState is AuthorizationStateReady:
+                    IsInProcess = false;
+                    IsAuthRequired = false;
                     await SearchMusicBotAsync();
                     break;
                 case UpdateMessageSendFailed message when message.Message.SenderUserId == _botId:
@@ -133,15 +165,6 @@ namespace SongRecognizer.ViewModels
                 case UpdateConnectionState connectionState when connectionState.State is ConnectionStateReady:
                     break;
             }
-        }
-
-        private async Task OpenAuthDialogAsync()
-        {
-            await Dispatcher.CurrentDispatcher.BeginInvoke(async () =>
-            {
-                var loginDialog = new LoginDialog { DataContext = new LoginViewModel(_telegramClient) };
-                await DialogHost.Show(loginDialog);
-            });
         }
 
         private void OnFileReceived(LocalFile file)
@@ -224,12 +247,17 @@ namespace SongRecognizer.ViewModels
             TdLog.SetFilePath("tgc_log.txt");
         }
 
-        private async Task IdentifySong()
+        private void StartProcess()
         {
             IsInProcess = true;
+            ErrorMessage = null;
+        }
+
+        private async Task IdentifySong()
+        {
+            StartProcess();
             State = "Recording...";
             Song = null;
-            ErrorMessage = null;
 
             var captureInstance = new WasapiLoopbackCapture();
             var audioWriter = new WaveFileWriter(FileName, captureInstance.WaveFormat);
@@ -279,6 +307,31 @@ namespace SongRecognizer.ViewModels
             }
         }
 
+        #region Login Dialog commands
+        private async Task QueryPhoneCodeAsync()
+        {
+            StartProcess();
+            await _telegramClient.SetAuthenticationPhoneNumberAsync(PhoneNumber);
+            IsInProcess = false;
+        }
+
+        private bool CanQueryPhoneCode()
+        {
+            return !string.IsNullOrEmpty(PhoneNumber);
+        }
+
+        private async Task AuthAsync()
+        {
+            StartProcess();
+            await _telegramClient.CheckAuthenticationCodeAsync(ReceivedCode);
+        }
+
+        private bool CanAuth()
+        {
+            return !string.IsNullOrEmpty(PhoneNumber) && !string.IsNullOrEmpty(ReceivedCode);
+        }
+        #endregion
+
         //private async Task<T> HandleTask<T>(Func<Task<T>> task)
         //{
         //    ErrorMessage = null;
@@ -298,9 +351,7 @@ namespace SongRecognizer.ViewModels
 
         private void OnError(Exception exception)
         {
-            Debug.WriteLine(exception);
-            ErrorMessage = exception.Message;
-            State = IdentifyTitle;
+            OnError(exception.ToString());
         }
 
         private void OnError(string error)
@@ -308,6 +359,7 @@ namespace SongRecognizer.ViewModels
             Debug.WriteLine(error);
             ErrorMessage = error;
             State = IdentifyTitle;
+            IsInProcess = false;
         }
     }
 }

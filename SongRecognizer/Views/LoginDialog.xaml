@@ -7,7 +7,7 @@
              xmlns:vm="clr-namespace:SongRecognizer.ViewModels"
              Width="460"
              Height="210"
-             d:DataContext="{d:DesignInstance vm:LoginViewModel}"
+             d:DataContext="{d:DesignInstance vm:MainViewModel}"
              mc:Ignorable="d">
     <Grid Margin="20,10">
         <Grid.RowDefinitions>
@@ -36,9 +36,7 @@
                          md:HintAssist.Hint="Received code"
                          Style="{StaticResource MaterialDesignFloatingHintTextBox}"
                          Text="{Binding ReceivedCode, UpdateSourceTrigger=PropertyChanged}"/>
-                <Button Command="{Binding AuthCommand}"
-                        CommandParameter="{Binding RelativeSource={RelativeSource Mode=Self}}"
-                        IsDefault="True">
+                <Button Command="{Binding AuthCommand}" IsDefault="True">
                     <md:PackIcon Width="24"
                                  Height="24"
                                  Kind="NavigateNext"/>
@@ -47,7 +45,7 @@
         </md:Transitioner>
         <ProgressBar Grid.Row="2"
                      IsIndeterminate="True"
-                     Visibility="{Binding RequestInProcess, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                     Visibility="{Binding IsInProcess, Converter={StaticResource BooleanToVisibilityConverter}}"/>
         <ScrollViewer Grid.Row="3"
                       MaxHeight="43"
                       HorizontalAlignment="Center"
@@ -57,6 +55,5 @@
                      Text="{Binding ErrorMessage}"
                      TextWrapping="WrapWithOverflow"/>
         </ScrollViewer>
-
     </Grid>
 </UserControl>
