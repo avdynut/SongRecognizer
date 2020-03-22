@@ -9,7 +9,6 @@ namespace SongRecognizer.Models
         public string Result { get; private set; }
         public string Artist { get; private set; }
         public string Title { get; private set; }
-        public string LinkText { get; private set; }
         public Uri Link { get; private set; }
 
         public Song()
@@ -31,7 +30,6 @@ namespace SongRecognizer.Models
 
             string link = result[1];
             Link = new Uri(link);
-            LinkText = link;
 
             result = result[0].Split('-');
             Artist = result[0].Trim();

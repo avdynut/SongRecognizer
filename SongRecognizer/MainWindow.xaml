@@ -9,7 +9,7 @@
         xmlns:vm="clr-namespace:SongRecognizer.ViewModels"
         Title="SongRecognizer"
         Width="500"
-        Height="450"
+        Height="620"
         Background="{DynamicResource MaterialDesignPaper}"
         FontFamily="{DynamicResource MaterialDesignFont}"
         ResizeMode="CanMinimize"

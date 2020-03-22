@@ -50,14 +50,38 @@
                      TextWrapping="WrapWithOverflow"/>
         </ScrollViewer>
         <StackPanel Grid.Row="3">
-            <TextBox IsReadOnly="True"
+            <StackPanel.Style>
+                <Style TargetType="StackPanel">
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsInProcess}" Value="True">
+                            <Setter Property="Visibility" Value="Hidden"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </StackPanel.Style>
+            <TextBox HorizontalAlignment="Center"
+                     IsReadOnly="True"
                      Style="{DynamicResource MaterialDesignComboBoxEditableTextBox}"
                      Text="{Binding Song.Result, Mode=OneWay}"/>
-            <TextBlock>
-                <Hyperlink Command="{Binding NavigateLinkCommand}" NavigateUri="{Binding Song.Link}">
-                    <TextBlock Text="{Binding Song.LinkText, Mode=OneWay}"/>
-                </Hyperlink>
-            </TextBlock>
+            <Button Background="Transparent" Command="{Binding NavigateLinkCommand}">
+                <Button.Style>
+                    <Style TargetType="Button">
+                        <Style.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Cursor" Value="Hand"/>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </Button.Style>
+                <Grid>
+                    <TextBlock HorizontalAlignment="Center"
+                               VerticalAlignment="Center"
+                               Foreground="Blue"
+                               Text="{Binding Song.Link, Mode=OneWay}"
+                               TextDecorations="Underline"/>
+                    <Image Source="{Binding ImageUri}"/>
+                </Grid>
+            </Button>
         </StackPanel>
     </Grid>
 </UserControl>

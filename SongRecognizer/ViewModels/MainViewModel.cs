@@ -33,7 +33,6 @@ namespace SongRecognizer.ViewModels
         private int _botId;
         private Chat _botChat;
         private int _imageId;
-        private bool _isReady;
 
         private Song _song;
         public Song Song
@@ -80,6 +79,17 @@ namespace SongRecognizer.ViewModels
             }
         }
 
+        private Uri _imageUri;
+        public Uri ImageUri
+        {
+            get => _imageUri;
+            set
+            {
+                _imageUri = value;
+                OnPropertyChanged();
+            }
+        }
+
         #region Login Dialog
         public string PhoneNumber { get; set; }
         public string ReceivedCode { get; set; }
@@ -117,7 +127,7 @@ namespace SongRecognizer.ViewModels
 
         public MainViewModel()
         {
-            IdentifySongCommand = new AsyncCommand(IdentifySong, () => _isReady, OnError);
+            IdentifySongCommand = new AsyncCommand(IdentifySong, () => !IsInProcess, OnError);
             NavigateLinkCommand = new RelayCommand(NavigateLink, () => !string.IsNullOrEmpty(Song?.Link?.ToString()));
             QueryPhoneCodeCommand = new AsyncCommand(QueryPhoneCodeAsync, CanQueryPhoneCode, OnError);
             AuthCommand = new AsyncCommand(AuthAsync, CanAuth, OnError);
@@ -157,8 +167,8 @@ namespace SongRecognizer.ViewModels
                 case UpdateNewMessage message when message.Message.SenderUserId == _botId:
                     await ParseMessageAsync(message.Message);
                     break;
-                case UpdateFile file when file.File.Id == _imageId:
-                    OnFileReceived(file.File.Local);
+                case UpdateFile file when file.File.Id == _imageId && file.File.Local.IsDownloadingCompleted:
+                    ImageUri = new Uri(file.File.Local.Path);
                     break;
                 case UpdateConnectionState connectionState when connectionState.State is ConnectionStateConnecting:
                     break;
@@ -167,48 +177,31 @@ namespace SongRecognizer.ViewModels
             }
         }
 
-        private void OnFileReceived(LocalFile file)
-        {
-            if (file.IsDownloadingCompleted)
-            {
-                //var processInfo = new ProcessStartInfo
-                //{
-                //    FileName = file.Path,
-                //    UseShellExecute = true
-                //};
-                //Process.Start(processInfo);
-
-                // todo: add image
-            }
-        }
-
         private async Task ParseMessageAsync(Message message)
         {
             if (message.Content is MessageContent.MessageText messageText)
             {
-                var image = messageText.WebPage?.Photo?.Sizes?.LastOrDefault()?.Photo;
-                if (image != null)
+                string text = messageText.Text.Text;
+                if (text.Contains("..."))    // 'Обрабатываю...'
                 {
-                    _imageId = image.Id;
-                    var imageFile = await _telegramClient.DownloadFileAsync(_imageId, priority: 20);
+                    State = "Identifying...";
+                }
+                else if (text.Contains("music.yandex.ru"))
+                {
+                    Song = new Song(text);
+
+                    // take the biggest size photo
+                    var image = messageText.WebPage?.Photo?.Sizes?.LastOrDefault()?.Photo;
+                    if (image != null)
+                    {
+                        _imageId = image.Id;
+                        var imageFile = await _telegramClient.DownloadFileAsync(_imageId, priority: 20);
+                    }
                 }
                 else
                 {
-
+                    Song = new Song();
                 }
-
-                //if (message.Message.Contains("..."))    // 'Обрабатываю...'
-                //{
-                //    State = "Identifying...";
-                //}
-                //else if (message.Message.Contains("music.yandex.ru"))
-                //{
-                //    Song = new Song(message.Message);
-                //}
-                //else
-                //{
-                //    Song = new Song();
-                //}
             }
             var messageIds = new long[] { message.Id };
             await _telegramClient.ViewMessagesAsync(message.ChatId, messageIds, true);
@@ -222,7 +215,7 @@ namespace SongRecognizer.ViewModels
             await _telegramClient.SetChatNotificationSettingsAsync(_botChat.Id, notifSettings);
             //var startMessage = _client.SendBotStartMessageAsync(_botId, botChat.Id, "a");
 
-            _isReady = true;
+            State = IdentifyTitle;
             CommandManager.InvalidateRequerySuggested();
         }
 
@@ -258,6 +251,7 @@ namespace SongRecognizer.ViewModels
             StartProcess();
             State = "Recording...";
             Song = null;
+            ImageUri = null;
 
             var captureInstance = new WasapiLoopbackCapture();
             var audioWriter = new WaveFileWriter(FileName, captureInstance.WaveFormat);
