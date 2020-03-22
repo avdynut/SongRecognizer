@@ -7,6 +7,7 @@
     <Version>0.1</Version>
     <Authors>Andrey Arekhva</Authors>
     <Company>AN5</Company>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
 
   <ItemGroup>
