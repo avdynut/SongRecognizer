@@ -12,11 +12,11 @@ using System.Reflection;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
-using System.Windows.Shell;
 using System.Windows.Threading;
 using TdLib;
 using static TdLib.TdApi;
 using static TdLib.TdApi.AuthorizationState;
+using static TdLib.TdApi.ConnectionState;
 using static TdLib.TdApi.Update;
 
 namespace SongRecognizer.ViewModels
@@ -32,7 +32,6 @@ namespace SongRecognizer.ViewModels
         private const int ResponseTimeoutSeconds = 10;
         private const int MinFileSizeBytes = 1024 * 100; // 100KB
 
-        private readonly TaskbarItemInfo _taskBarInfo;
         private readonly TdClient _telegramClient = new TdClient();
         private int _botId;
         private Chat _botChat;
@@ -80,7 +79,6 @@ namespace SongRecognizer.ViewModels
             set
             {
                 _isInProcess = value;
-                _taskBarInfo.ProgressState = _isInProcess ? TaskbarItemProgressState.Indeterminate : TaskbarItemProgressState.None;
                 OnPropertyChanged();
             }
         }
@@ -90,10 +88,8 @@ namespace SongRecognizer.ViewModels
         public ICommand IdentifySongCommand { get; }
         public ICommand NavigateLinkCommand { get; }
 
-        public MainViewModel(TaskbarItemInfo taskBarInfo)
+        public MainViewModel()
         {
-            _taskBarInfo = taskBarInfo ?? throw new ArgumentNullException(nameof(taskBarInfo));
-
             IdentifySongCommand = new AsyncCommand(IdentifySong, () => _isReady, OnError);
             NavigateLinkCommand = new RelayCommand(NavigateLink, () => !string.IsNullOrEmpty(Song?.Link?.ToString()));
 
@@ -132,7 +128,9 @@ namespace SongRecognizer.ViewModels
                 case UpdateFile file when file.File.Id == _imageId:
                     OnFileReceived(file.File.Local);
                     break;
-                case UpdateConnectionState connectionState:
+                case UpdateConnectionState connectionState when connectionState.State is ConnectionStateConnecting:
+                    break;
+                case UpdateConnectionState connectionState when connectionState.State is ConnectionStateReady:
                     break;
             }
         }

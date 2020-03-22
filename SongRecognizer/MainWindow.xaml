@@ -1,10 +1,12 @@
 ﻿<Window x:Class="SongRecognizer.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:c="clr-namespace:SongRecognizer.Converters"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:md="http://materialdesigninxaml.net/winfx/xaml/themes"
         xmlns:views="clr-namespace:SongRecognizer.Views"
+        xmlns:vm="clr-namespace:SongRecognizer.ViewModels"
         Title="SongRecognizer"
         Width="500"
         Height="450"
@@ -15,6 +17,15 @@
         TextElement.FontWeight="Regular"
         TextElement.Foreground="{DynamicResource MaterialDesignBody}"
         mc:Ignorable="d">
+    <Window.Resources>
+        <c:BoolToIntermediateStateConverter x:Key="BoolToIntermediateStateConverter"/>
+    </Window.Resources>
+    <Window.DataContext>
+        <vm:MainViewModel/>
+    </Window.DataContext>
+    <Window.TaskbarItemInfo>
+        <TaskbarItemInfo ProgressState="{Binding IsInProcess, Converter={StaticResource BoolToIntermediateStateConverter}}"/>
+    </Window.TaskbarItemInfo>
     <md:DialogHost>
         <md:DialogHost.DialogContent>
             <views:LoginDialog/>
