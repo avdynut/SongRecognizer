@@ -45,7 +45,7 @@ namespace SongRecognizer.ViewModels
             }
         }
 
-        private string _state = "Loading...";
+        private string _state = "Connecting...";
         public string State
         {
             get => _state;
@@ -154,7 +154,6 @@ namespace SongRecognizer.ViewModels
                     SelectedSlideIndex = 1;
                     break;
                 case UpdateAuthorizationState authorizationState when authorizationState.AuthorizationState is AuthorizationStateReady:
-                    IsInProcess = false;
                     IsAuthRequired = false;
                     await SearchMusicBotAsync();
                     break;
@@ -216,6 +215,7 @@ namespace SongRecognizer.ViewModels
             //var startMessage = _client.SendBotStartMessageAsync(_botId, botChat.Id, "a");
 
             State = IdentifyTitle;
+            IsInProcess = false;
             CommandManager.InvalidateRequerySuggested();
         }
 

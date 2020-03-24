@@ -1,12 +1,16 @@
 ﻿<UserControl x:Class="SongRecognizer.Views.MainView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="clr-namespace:SongRecognizer.Converters"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:md="http://materialdesigninxaml.net/winfx/xaml/themes"
              xmlns:vm="clr-namespace:SongRecognizer.ViewModels"
              d:DataContext="{d:DesignInstance vm:MainViewModel}"
              mc:Ignorable="d">
+    <UserControl.Resources>
+        <c:NullableToVisibilityConverter x:Key="NullableToVisibilityConverter"/>
+    </UserControl.Resources>
     <Grid Margin="10">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -63,7 +67,9 @@
                      IsReadOnly="True"
                      Style="{DynamicResource MaterialDesignComboBoxEditableTextBox}"
                      Text="{Binding Song.Result, Mode=OneWay}"/>
-            <Button Background="Transparent" Command="{Binding NavigateLinkCommand}">
+            <Button Background="Transparent"
+                    Command="{Binding NavigateLinkCommand}"
+                    Visibility="{Binding Song.Link, Converter={StaticResource NullableToVisibilityConverter}, FallbackValue=Hidden}">
                 <Button.Style>
                     <Style TargetType="Button">
                         <Style.Triggers>
