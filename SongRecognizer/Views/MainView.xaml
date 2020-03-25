@@ -13,47 +13,12 @@
     </UserControl.Resources>
     <Grid Margin="10">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <Button Grid.Row="0"
-                md:ButtonProgressAssist.IsIndeterminate="True"
-                md:ButtonProgressAssist.IsIndicatorVisible="{Binding IsInProcess}"
-                md:ButtonProgressAssist.Value="-1"
-                Command="{Binding IdentifySongCommand}"
-                IsDefault="True"
-                Style="{StaticResource MaterialDesignRaisedButton}"
-                Content="{Binding State}">
-            <Button.Triggers>
-                <EventTrigger RoutedEvent="Button.Click">
-                    <EventTrigger.Actions>
-                        <BeginStoryboard>
-                            <Storyboard TargetProperty="Value" TargetName="Progress">
-                                <DoubleAnimation From="0"
-                                                 To="100"
-                                                 Duration="{Binding RecordDuration}"/>
-                            </Storyboard>
-                        </BeginStoryboard>
-                    </EventTrigger.Actions>
-                </EventTrigger>
-            </Button.Triggers>
-        </Button>
-        <ProgressBar Name="Progress"
-                     Grid.Row="1"
-                     Height="20"
-                     Style="{StaticResource MaterialDesignCircularProgressBar}"/>
-        <ScrollViewer Grid.Row="2"
-                      MaxHeight="43"
-                      HorizontalAlignment="Center"
-                      VerticalScrollBarVisibility="Auto">
-            <TextBox Foreground="{DynamicResource ValidationErrorBrush}"
-                     IsReadOnly="True"
-                     Text="{Binding ErrorMessage}"
-                     TextWrapping="WrapWithOverflow"/>
-        </ScrollViewer>
-        <StackPanel Grid.Row="3">
+        <StackPanel Grid.Row="0">
             <StackPanel.Style>
                 <Style TargetType="StackPanel">
                     <Style.Triggers>
@@ -89,5 +54,40 @@
                 </Grid>
             </Button>
         </StackPanel>
+        <ScrollViewer Grid.Row="1"
+                      MaxHeight="43"
+                      HorizontalAlignment="Center"
+                      VerticalScrollBarVisibility="Auto">
+            <TextBox Foreground="{DynamicResource ValidationErrorBrush}"
+                     IsReadOnly="True"
+                     Text="{Binding ErrorMessage}"
+                     TextWrapping="WrapWithOverflow"/>
+        </ScrollViewer>
+        <ProgressBar Name="Progress"
+                     Grid.Row="2"
+                     Height="20"
+                     Style="{StaticResource MaterialDesignCircularProgressBar}"/>
+        <Button Grid.Row="3"
+                md:ButtonProgressAssist.IsIndeterminate="True"
+                md:ButtonProgressAssist.IsIndicatorVisible="{Binding IsInProcess}"
+                md:ButtonProgressAssist.Value="-1"
+                Command="{Binding IdentifySongCommand}"
+                IsDefault="True"
+                Style="{StaticResource MaterialDesignRaisedButton}"
+                Content="{Binding State}">
+            <Button.Triggers>
+                <EventTrigger RoutedEvent="Button.Click">
+                    <EventTrigger.Actions>
+                        <BeginStoryboard>
+                            <Storyboard TargetProperty="Value" TargetName="Progress">
+                                <DoubleAnimation From="0"
+                                                 To="100"
+                                                 Duration="{Binding RecordDuration}"/>
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </EventTrigger.Actions>
+                </EventTrigger>
+            </Button.Triggers>
+        </Button>
     </Grid>
 </UserControl>

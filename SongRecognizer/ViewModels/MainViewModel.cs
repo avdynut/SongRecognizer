@@ -23,13 +23,14 @@ namespace SongRecognizer.ViewModels
         private const int ApiId = 1087573;
         private const string ApiHash = "478d65ed651632ca1cb656e2b9013501";
         private const string YaMelodyBotUsername = "YaMelodyBot";
-        private const string FileName = "record.wav";
+
         private const string IdentifyTitle = "Identify";
+        private const string FileName = "record.wav";        
         private const double RecordDurationSeconds = 3;
-        private const int ResponseTimeoutSeconds = 10;
         private const int MinFileSizeBytes = 1024 * 100; // 100KB
 
         private readonly TdClient _telegramClient = new TdClient();
+
         private int _botId;
         private Chat _botChat;
         private int _imageId;
@@ -41,6 +42,17 @@ namespace SongRecognizer.ViewModels
             private set
             {
                 _song = value;
+                OnPropertyChanged();
+            }
+        }
+
+        private Uri _imageUri;
+        public Uri ImageUri
+        {
+            get => _imageUri;
+            set
+            {
+                _imageUri = value;
                 OnPropertyChanged();
             }
         }
@@ -75,20 +87,19 @@ namespace SongRecognizer.ViewModels
             set
             {
                 _isInProcess = value;
+                if (!_isInProcess)
+                {
+                    State = IdentifyTitle;
+                }
                 OnPropertyChanged();
+                CommandManager.InvalidateRequerySuggested();
             }
         }
 
-        private Uri _imageUri;
-        public Uri ImageUri
-        {
-            get => _imageUri;
-            set
-            {
-                _imageUri = value;
-                OnPropertyChanged();
-            }
-        }
+        public Duration RecordDuration { get; } = TimeSpan.FromSeconds(RecordDurationSeconds);
+
+        public ICommand IdentifySongCommand { get; }
+        public ICommand NavigateLinkCommand { get; }
 
         #region Login Dialog
         public string PhoneNumber { get; set; }
@@ -120,11 +131,6 @@ namespace SongRecognizer.ViewModels
         public ICommand AuthCommand { get; }
         #endregion
 
-        public Duration RecordDuration { get; } = TimeSpan.FromSeconds(RecordDurationSeconds);
-
-        public ICommand IdentifySongCommand { get; }
-        public ICommand NavigateLinkCommand { get; }
-
         public MainViewModel()
         {
             IdentifySongCommand = new AsyncCommand(IdentifySong, () => !IsInProcess, OnError);
@@ -132,8 +138,15 @@ namespace SongRecognizer.ViewModels
             QueryPhoneCodeCommand = new AsyncCommand(QueryPhoneCodeAsync, CanQueryPhoneCode, OnError);
             AuthCommand = new AsyncCommand(AuthAsync, CanAuth, OnError);
 
-            InitTdLog();
+            InitLogging();
             _telegramClient.UpdateReceived += OnUpdateReceived;
+        }
+
+        private void InitLogging()
+        {
+            TdLog.SetVerbosityLevel((int)Models.LogVerbosityLevel.Warnings);
+            TdLog.SetFatalErrorCallback(OnError);
+            TdLog.SetFilePath("tgc_log.txt");
         }
 
         private async void OnUpdateReceived(object sender, Update update)
@@ -176,6 +189,20 @@ namespace SongRecognizer.ViewModels
             }
         }
 
+        private Task SetTdLibParametersAsync()
+        {
+            var parameters = new TdlibParameters
+            {
+                ApiId = ApiId,
+                ApiHash = ApiHash,
+                ApplicationVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString(),
+                DeviceModel = "PC",
+                SystemLanguageCode = CultureInfo.CurrentCulture.TwoLetterISOLanguageName,
+                SystemVersion = Environment.OSVersion.ToString()
+            };
+            return _telegramClient.SetTdlibParametersAsync(parameters);
+        }
+
         private async Task ParseMessageAsync(Message message)
         {
             if (message.Content is MessageContent.MessageText messageText)
@@ -196,10 +223,13 @@ namespace SongRecognizer.ViewModels
                         _imageId = image.Id;
                         var imageFile = await _telegramClient.DownloadFileAsync(_imageId, priority: 20);
                     }
+
+                    IsInProcess = false;
                 }
                 else
                 {
                     Song = new Song();
+                    IsInProcess = false;
                 }
             }
             var messageIds = new long[] { message.Id };
@@ -214,30 +244,7 @@ namespace SongRecognizer.ViewModels
             await _telegramClient.SetChatNotificationSettingsAsync(_botChat.Id, notifSettings);
             //var startMessage = _client.SendBotStartMessageAsync(_botId, botChat.Id, "a");
 
-            State = IdentifyTitle;
             IsInProcess = false;
-            CommandManager.InvalidateRequerySuggested();
-        }
-
-        private Task SetTdLibParametersAsync()
-        {
-            var parameters = new TdlibParameters
-            {
-                ApiId = ApiId,
-                ApiHash = ApiHash,
-                ApplicationVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString(),
-                DeviceModel = "PC",
-                SystemLanguageCode = CultureInfo.CurrentCulture.TwoLetterISOLanguageName,
-                SystemVersion = Environment.OSVersion.ToString()
-            };
-            return _telegramClient.SetTdlibParametersAsync(parameters);
-        }
-
-        private void InitTdLog()
-        {
-            TdLog.SetVerbosityLevel(2);
-            TdLog.SetFatalErrorCallback(OnError);
-            TdLog.SetFilePath("tgc_log.txt");
         }
 
         private void StartProcess()
@@ -273,10 +280,8 @@ namespace SongRecognizer.ViewModels
             else
             {
                 ErrorMessage = "Incorrect record";
+                IsInProcess = false;
             }
-
-            State = IdentifyTitle;
-            IsInProcess = false;
         }
 
         private async Task SendRecord()
@@ -306,7 +311,6 @@ namespace SongRecognizer.ViewModels
         {
             StartProcess();
             await _telegramClient.SetAuthenticationPhoneNumberAsync(PhoneNumber);
-            IsInProcess = false;
         }
 
         private bool CanQueryPhoneCode()
@@ -352,7 +356,6 @@ namespace SongRecognizer.ViewModels
         {
             Debug.WriteLine(error);
             ErrorMessage = error;
-            State = IdentifyTitle;
             IsInProcess = false;
         }
     }
