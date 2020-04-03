@@ -8,6 +8,10 @@
     <Authors>Andrey Arekhva</Authors>
     <Company>AN5</Company>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>music-note.ico</ApplicationIcon>
+    <Description>Allows to recognize playing songs via telegram yandex bot</Description>
+    <RepositoryUrl>https://github.com/avdynut/SongRecognizer</RepositoryUrl>
+    <PackageTags>song, music, recognize, telegram, tdlib, yandex.music, bot</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>
