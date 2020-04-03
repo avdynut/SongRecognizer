@@ -1,4 +1,5 @@
 ﻿using NAudio.Wave;
+using NLog;
 using SongRecognizer.Commands;
 using SongRecognizer.Models;
 using System;
@@ -25,10 +26,11 @@ namespace SongRecognizer.ViewModels
         private const string YaMelodyBotUsername = "YaMelodyBot";
 
         private const string IdentifyTitle = "Identify";
-        private const string FileName = "record.wav";        
+        private const string FileName = "record.wav";
         private const double RecordDurationSeconds = 3;
         private const int MinFileSizeBytes = 1024 * 100; // 100KB
 
+        private readonly ILogger _logger = LogManager.GetCurrentClassLogger();
         private readonly TdClient _telegramClient = new TdClient();
 
         private int _botId;
@@ -65,6 +67,7 @@ namespace SongRecognizer.ViewModels
             {
                 _state = value;
                 OnPropertyChanged();
+                _logger.Debug($"State changed to {_state}");
                 CommandManager.InvalidateRequerySuggested();
             }
         }
@@ -140,6 +143,7 @@ namespace SongRecognizer.ViewModels
 
             InitLogging();
             _telegramClient.UpdateReceived += OnUpdateReceived;
+            _logger.Trace("Started");
         }
 
         private void InitLogging()
@@ -157,16 +161,21 @@ namespace SongRecognizer.ViewModels
                     await SetTdLibParametersAsync();
                     break;
                 case UpdateAuthorizationState authorizationState when authorizationState.AuthorizationState is AuthorizationStateWaitEncryptionKey:
+                    _logger.Trace("CheckDatabaseEncryptionKey");
                     await _telegramClient.CheckDatabaseEncryptionKeyAsync();
                     break;
                 case UpdateAuthorizationState authorizationState when authorizationState.AuthorizationState is AuthorizationStateWaitPhoneNumber:
+                    _logger.Trace("AuthorizationStateWaitPhoneNumber");
                     IsInProcess = false;
                     IsAuthRequired = true;
                     break;
                 case UpdateAuthorizationState authorizationState when authorizationState.AuthorizationState is AuthorizationStateWaitCode:
+                    _logger.Trace("AuthorizationStateWaitCode");
+                    IsInProcess = false;
                     SelectedSlideIndex = 1;
                     break;
                 case UpdateAuthorizationState authorizationState when authorizationState.AuthorizationState is AuthorizationStateReady:
+                    _logger.Trace("AuthorizationStateReady");
                     IsAuthRequired = false;
                     await SearchMusicBotAsync();
                     break;
@@ -174,23 +183,28 @@ namespace SongRecognizer.ViewModels
                     OnError("Message was not sent");
                     break;
                 case UpdateMessageSendSucceeded message when message.Message.SenderUserId == _botId:
-                    // message successfully sent
+                    _logger.Info("Message to bot successfully sent");
                     break;
                 case UpdateNewMessage message when message.Message.SenderUserId == _botId:
                     await ParseMessageAsync(message.Message);
                     break;
                 case UpdateFile file when file.File.Id == _imageId && file.File.Local.IsDownloadingCompleted:
+                    _logger.Info("Image file received");
                     ImageUri = new Uri(file.File.Local.Path);
                     break;
                 case UpdateConnectionState connectionState when connectionState.State is ConnectionStateConnecting:
+                    _logger.Trace("ConnectionStateConnecting");
                     break;
                 case UpdateConnectionState connectionState when connectionState.State is ConnectionStateReady:
+                    _logger.Trace("ConnectionStateReady");
                     break;
             }
         }
 
         private Task SetTdLibParametersAsync()
         {
+            _logger.Trace("SetTdLibParameters");
+
             var parameters = new TdlibParameters
             {
                 ApiId = ApiId,
@@ -205,6 +219,8 @@ namespace SongRecognizer.ViewModels
 
         private async Task ParseMessageAsync(Message message)
         {
+            _logger.Trace("Parsing message from bot");
+
             if (message.Content is MessageContent.MessageText messageText)
             {
                 string text = messageText.Text.Text;
@@ -238,6 +254,8 @@ namespace SongRecognizer.ViewModels
 
         private async Task SearchMusicBotAsync()
         {
+            _logger.Trace("SearchMusicBot");
+
             _botChat = await _telegramClient.SearchPublicChatAsync(YaMelodyBotUsername);
             _botId = (_botChat.Type as ChatType.ChatTypePrivate).UserId;
             var notifSettings = new ChatNotificationSettings { MuteFor = int.MaxValue };
@@ -245,6 +263,7 @@ namespace SongRecognizer.ViewModels
             //var startMessage = _client.SendBotStartMessageAsync(_botId, botChat.Id, "a");
 
             IsInProcess = false;
+            CommandManager.InvalidateRequerySuggested();
         }
 
         private void StartProcess()
@@ -279,8 +298,7 @@ namespace SongRecognizer.ViewModels
             }
             else
             {
-                ErrorMessage = "Incorrect record";
-                IsInProcess = false;
+                OnError("Incorrect record");
             }
         }
 
@@ -309,6 +327,8 @@ namespace SongRecognizer.ViewModels
         #region Login Dialog commands
         private async Task QueryPhoneCodeAsync()
         {
+            _logger.Trace("QueryPhoneCode");
+
             StartProcess();
             await _telegramClient.SetAuthenticationPhoneNumberAsync(PhoneNumber);
         }
@@ -320,6 +340,7 @@ namespace SongRecognizer.ViewModels
 
         private async Task AuthAsync()
         {
+            _logger.Trace("CheckAuthenticationCode");
             StartProcess();
             await _telegramClient.CheckAuthenticationCodeAsync(ReceivedCode);
         }
@@ -330,31 +351,16 @@ namespace SongRecognizer.ViewModels
         }
         #endregion
 
-        //private async Task<T> HandleTask<T>(Func<Task<T>> task)
-        //{
-        //    ErrorMessage = null;
-        //    T result = default;
-
-        //    try
-        //    {
-        //        result = await task();
-        //    }
-        //    catch (Exception exception)
-        //    {
-        //        OnError(exception);
-        //    }
-
-        //    return result;
-        //}
-
         private void OnError(Exception exception)
         {
-            OnError(exception.ToString());
+            _logger.Error(exception);
+            ErrorMessage = exception.Message;
+            IsInProcess = false;
         }
 
         private void OnError(string error)
         {
-            Debug.WriteLine(error);
+            _logger.Error(error);
             ErrorMessage = error;
             IsInProcess = false;
         }
