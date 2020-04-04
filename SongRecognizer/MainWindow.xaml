@@ -7,7 +7,7 @@
         xmlns:md="http://materialdesigninxaml.net/winfx/xaml/themes"
         xmlns:views="clr-namespace:SongRecognizer.Views"
         xmlns:vm="clr-namespace:SongRecognizer.ViewModels"
-        Title="🎵 SongRecognizer 🎵"
+        Title="SongRecognizer"
         Width="500"
         Height="620"
         Background="{DynamicResource MaterialDesignPaper}"
