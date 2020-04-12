@@ -10,7 +10,8 @@ So you should authenticate via telegram phone number.
 
 #### Install Requirements
 * Windows 10
-* .NET Core 3.1
+* [.NET Core 3.1](https://dotnet.microsoft.com/download/dotnet-core/)
+* [Microsoft Visual C++](https://aka.ms/vs/16/release/vc_redist.x64.exe)
 
 #### Used Libs
 * [TdLib](https://github.com/egramtel/tdsharp) - telegram API client
